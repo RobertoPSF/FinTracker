@@ -1,0 +1,182 @@
+{
+  "version": 1,
+  "generic": {
+    "ignore": [
+      "fatura fechou",
+      "fatura disponivel",
+      "sua fatura",
+      "seu saldo",
+      "saldo disponivel",
+      "convite",
+      "atualize o app",
+      "cashback",
+      "proposta",
+      "limite liberado",
+      "aumentamos seu limite",
+      "codigo de verificacao",
+      "codigo:",
+      "boleto disponivel",
+      "vence hoje",
+      "voce tem",
+      "novidade"
+    ],
+    "income": [
+      "voce recebeu",
+      "pix recebido",
+      "transferencia recebida",
+      "recebeu um pix",
+      "recebemos",
+      "deposito",
+      "credito de",
+      "entrada de",
+      "estorno",
+      "reembolso",
+      "salario"
+    ],
+    "expense": [
+      "compra aprovada",
+      "compra no debito",
+      "compra no credito",
+      "voce pagou",
+      "pagamento aprovado",
+      "pagamento efetuado",
+      "pagamento de",
+      "pix enviado",
+      "transferencia enviada",
+      "voce enviou",
+      "voce transferiu",
+      "debito de",
+      "saida de",
+      "saque",
+      "compra realizada",
+      "gasto"
+    ],
+    "amountPatterns": [
+      "r\\$\\s?([0-9]{1,3}(?:\\.[0-9]{3})*,[0-9]{2})",
+      "r\\$\\s?([0-9]+,[0-9]{2})",
+      "r\\$\\s?([0-9]+(?:\\.[0-9]{2})?)"
+    ],
+    "counterpartyPatterns": [
+      "(?:recebeu|recebido)\\s+(?:de|do|da)\\s+([^.,!;\\n]{2,40})",
+      "(?:enviado|enviou|transferiu|pagou|pagamento)\\s+(?:para|pra|ao|a)\\s+([^.,!;\\n]{2,40})",
+      "(?:para|pra)\\s+([^.,!;\\n]{2,40})$",
+      "\\bno\\s+([^.,!;\\n]{2,40})$",
+      "\\bem\\s+([^.,!;\\n]{2,40})$",
+      "(?:de|do|da)\\s+([^.,!;\\n]{2,40})$"
+    ]
+  },
+  "banks": [
+    {
+      "package": "com.nu.production",
+      "name": "Nubank",
+      "ignore": [
+        "fatura",
+        "limite",
+        "conta de luz"
+      ],
+      "counterpartyPatterns": [
+        "compra aprovada.*?\\bno\\s+([^.,!;\\n]{2,40})",
+        "compra aprovada.*?\\bem\\s+([^.,!;\\n]{2,40})"
+      ]
+    },
+    {
+      "package": "br.com.intermedium",
+      "name": "Inter",
+      "ignore": [
+        "investimento",
+        "fatura"
+      ]
+    },
+    {
+      "package": "com.itau",
+      "name": "Itaú",
+      "ignore": [
+        "fatura",
+        "limite"
+      ]
+    },
+    {
+      "package": "com.itau.iaccount",
+      "name": "Itaú iti",
+      "ignore": []
+    },
+    {
+      "package": "com.c6bank.app",
+      "name": "C6 Bank",
+      "ignore": [
+        "fatura",
+        "limite"
+      ]
+    },
+    {
+      "package": "com.picpay",
+      "name": "PicPay",
+      "ignore": [
+        "promocao",
+        "cupom"
+      ]
+    },
+    {
+      "package": "com.mercadopago.wallet",
+      "name": "Mercado Pago",
+      "ignore": [
+        "promocao",
+        "cupom",
+        "rendimento"
+      ]
+    },
+    {
+      "package": "br.com.gabba.Caixa",
+      "name": "Caixa",
+      "ignore": []
+    },
+    {
+      "package": "br.com.bb.android",
+      "name": "Banco do Brasil",
+      "ignore": [
+        "fatura"
+      ]
+    },
+    {
+      "package": "com.santander.app",
+      "name": "Santander",
+      "ignore": [
+        "fatura"
+      ]
+    },
+    {
+      "package": "com.bradesco",
+      "name": "Bradesco",
+      "ignore": [
+        "fatura"
+      ]
+    },
+    {
+      "package": "br.com.neon",
+      "name": "Neon",
+      "ignore": []
+    },
+    {
+      "package": "br.com.uol.ps.myaccount",
+      "name": "PagBank",
+      "ignore": [
+        "promocao"
+      ]
+    },
+    {
+      "package": "com.willbank",
+      "name": "Will Bank",
+      "ignore": []
+    },
+    {
+      "package": "br.com.original.bank",
+      "name": "Original",
+      "ignore": []
+    },
+    {
+      "package": "com.google.android.apps.nbu.paisa.user",
+      "name": "Google Pay",
+      "ignore": []
+    }
+  ]
+}

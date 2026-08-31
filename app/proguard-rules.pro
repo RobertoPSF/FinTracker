@@ -1,0 +1,3 @@
+-keep class net.zetetic.database.** { *; }
+-keep class net.sqlcipher.** { *; }
+-keepclassmembers class com.rfilh.fintracker.parser.** { *; }

@@ -1,0 +1,1 @@
+Source code for JavaCPP Presets For FFmpeg can be downloaded from https://android.googlesource.com/platform/prebuilts/tools/+/refs/heads/studio-main/common/m2/repository/org/bytedeco/javacpp-presets-platform-ffmpeg-1.5.12-src.zip
