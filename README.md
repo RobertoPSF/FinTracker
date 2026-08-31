@@ -12,6 +12,20 @@ O APK é publicado automaticamente a cada versão em **[Releases](https://github
 
 Requer Android 7.0 (API 24) ou superior.
 
+## Possiveis problemas
+
+Caso o celular bloqueie a instalação do AKP:
+
+1. Abra a Play Store → toque no seu ícone de perfil (canto superior direito) → Play Protect → ícone de engrenagem (⚙️) → desative "Verificar apps com o Play Protect".
+2. Volte e instale o APK de novo.
+3. Pode reativar o Play Protect depois de instalado.
+
+Caso não consiga habilitar a leitura de notificações:
+
+1. Ajustes → Apps → FinTracker (ou segurar o ícone do app → "Informações do app")
+2. Tocar no menu de três pontinhos (⋮) no canto superior direito da tela
+3. Selecionar "Ativar configurações restritas" (ou "Allow restricted settings", dependendo do idioma/versão)
+
 ## O que o app faz hoje
 
 **Captura e classificação automática**
