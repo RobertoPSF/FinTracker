@@ -9,4 +9,7 @@ captures/
 .cxx
 *.apk
 *.keystore
+*.jks
+keystore_base64.txt
+*_base64.txt
 CLAUDE.md

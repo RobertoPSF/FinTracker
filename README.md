@@ -29,7 +29,7 @@ Caso não consiga habilitar a leitura de notificações:
 ## O que o app faz hoje
 
 **Captura e classificação automática**
-- Lê as notificações dos apps de banco/carteira instalados (lista em `parser_rules.json`, 16 bancos já cobertos: Nubank, Inter, Itaú, Itaú iti, C6, PicPay, Mercado Pago, Caixa, Banco do Brasil, Santander, Bradesco, Neon, PagBank, Will Bank, Original, Google Pay).
+- Lê as notificações dos apps de banco/carteira já cadastrados (lista em `parser_rules.json`, 16 bancos já cobertos: Nubank, Inter, Itaú, Itaú iti, C6, PicPay, Mercado Pago, Caixa, Banco do Brasil, Santander, Bradesco, Neon, PagBank, Will Bank, Original, Google Pay) — e também de bancos/fintechs **não cadastrados**, desde que a notificação mencione "Pix", sem precisar de nenhuma atualização do app pra reconhecer uma instituição nova.
 - Classifica cada notificação como entrada, saída ou desconhecida, extrai o valor e (quando dá) a contraparte.
 - Categoriza automaticamente por palavra-chave do estabelecimento (Alimentação, Transporte, Assinaturas, Compras, Saúde, Moradia).
 - Deduplica notificações reentregues pelo sistema.
@@ -59,11 +59,19 @@ Caso não consiga habilitar a leitura de notificações:
 **Aparência**
 - Tema claro e escuro (alternável nas configurações).
 
-## Segurança técnica
+## Segurança
 
-- Sem permissão `INTERNET` — o app não faz nenhuma requisição de rede.
+- **O app não tem permissão `INTERNET` no `AndroidManifest.xml`.** Isso não é uma promessa, é uma restrição do próprio sistema operacional: sem essa permissão, o Android bloqueia qualquer tentativa de conexão de rede no nível do socket — o app literalmente não tem como fazer uma requisição HTTP, enviar dados a um servidor ou sincronizar com qualquer serviço externo, mesmo que quisesse. Tudo o que é capturado, classificado e armazenado fica **só no aparelho**, o tempo todo.
 - Banco de dados Room + SQLCipher, com passphrase de 32 bytes aleatórios guardada em `EncryptedSharedPreferences` (Android Keystore).
-- Backup em nuvem do próprio Android desativado (`allowBackup=false`).
+- Backup em nuvem do próprio Android desativado (`allowBackup=false`) — nem o backup automático do Google tira uma cópia dos dados do app.
+
+### Trade-off de privacidade: captura de notificações de fintechs não cadastradas
+
+Pra reconhecer bancos/fintechs que ainda nem existem hoje sem precisar de uma atualização do app, o listener de notificações passou a inspecionar o texto de **qualquer** notificação de **qualquer** app instalado — não só das apps de banco já cadastradas — checando se ela menciona "Pix". Isso é uma mudança real de superfície, e é importante deixar explícito:
+
+- Essa checagem acontece **só em memória**, no próprio processo do app. Uma notificação que não menciona "Pix" é descartada na hora — nunca é escrita no banco de dados, nunca sai da RAM.
+- Só quando o texto realmente parece um Pix é que ele é persistido (no banco local criptografado) e classificado. Se a fonte for uma app não cadastrada, a transação nasce com confiança reduzida e cai na fila de revisão manual, em vez de ser tratada como certa.
+- Nada disso envolve rede: dado que o app não tem permissão `INTERNET`, mesmo esse texto inspecionado não tem como ser enviado a lugar nenhum, por engano ou de propósito.
 
 ## Para desenvolvedores
 
