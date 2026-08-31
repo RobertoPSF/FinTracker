@@ -8,18 +8,31 @@ import com.rfilh.fintracker.domain.model.TransactionType
 /**
  * Classificação híbrida: keywords -> tipo, regex -> valor/contraparte.
  * Puro Kotlin (sem dependência de Android) para permitir teste unitário direto.
+ *
+ * Conhecer o app via `overrides` é uma otimização (nome bonito, padrões mais precisos), nunca
+ * um pré-requisito: um app sem entrada em `parser_rules.json` ainda é classificado normalmente
+ * pelas regras de `GenericRules`, só com confiança MEDIUM em vez de HIGH.
  */
 class TransactionClassifier(private val rules: ParserRules) {
 
-    fun classify(packageName: String, title: String?, body: String?): ParseResult {
-        val bank = rules.bank(packageName)
-        val bankName = bank?.name ?: packageName
+    /**
+     * @param appLabel nome do app resolvido pelo `PackageManager` (ex. via `getApplicationLabel`)
+     *   — usado como nome de exibição quando não há override cadastrado, em vez do package cru.
+     */
+    fun classify(packageName: String, title: String?, body: String?, appLabel: String? = null): ParseResult {
+        val override = rules.overrideFor(packageName)
+        val displayName = override?.name ?: appLabel ?: packageName
         val rawText = listOfNotNull(title, body).joinToString(" ")
         if (rawText.isBlank()) return ParseResult.Ignored
         val text = TextNormalizer.normalize(rawText)
 
-        val income = (bank?.income.orEmpty() + rules.generic.income).map { TextNormalizer.normalize(it) }
-        val expense = (bank?.expense.orEmpty() + rules.generic.expense).map { TextNormalizer.normalize(it) }
+        // Sinal de "não efetivado" (agendado/recusado/pendente/cancelado) vence qualquer keyword
+        // de tipo — evita registrar como transação real algo que nunca chegou a acontecer.
+        val notCompleted = (override?.notCompleted.orEmpty() + rules.generic.notCompleted).map { TextNormalizer.normalize(it) }
+        if (notCompleted.any { text.contains(it) }) return ParseResult.Ignored
+
+        val income = (override?.income.orEmpty() + rules.generic.income).map { TextNormalizer.normalize(it) }
+        val expense = (override?.expense.orEmpty() + rules.generic.expense).map { TextNormalizer.normalize(it) }
 
         val incomeHit = income.filter { text.contains(it) }.minByOrNull { text.indexOf(it) }
         val expenseHit = expense.filter { text.contains(it) }.minByOrNull { text.indexOf(it) }
@@ -41,23 +54,23 @@ class TransactionClassifier(private val rules: ParserRules) {
 
         // sem tipo reconhecido: descarta ruído (marketing, fatura, saldo)
         if (type == TransactionType.UNKNOWN) {
-            val ignore = (bank?.ignore.orEmpty() + rules.generic.ignore).map { TextNormalizer.normalize(it) }
+            val ignore = (override?.ignore.orEmpty() + rules.generic.ignore).map { TextNormalizer.normalize(it) }
             if (ignore.any { text.contains(it) }) return ParseResult.Ignored
         }
 
-        val amount = extractAmount(text, bank)
+        val amount = extractAmount(text, override)
         if (type == TransactionType.UNKNOWN && amount == null) return ParseResult.Ignored
 
-        val counterparty = extractCounterparty(rawText, text, bank)
+        val counterparty = extractCounterparty(rawText, text, override)
         val category = extractCategory(text)
 
         val confidence = when {
-            type != TransactionType.UNKNOWN && amount != null && bank != null -> Confidence.HIGH
+            type != TransactionType.UNKNOWN && amount != null && override != null -> Confidence.HIGH
             type != TransactionType.UNKNOWN && amount != null -> Confidence.MEDIUM
             else -> Confidence.LOW
         }
 
-        return ParseResult.Parsed(bankName, type, amount, counterparty, confidence, matched, category)
+        return ParseResult.Parsed(displayName, type, amount, counterparty, confidence, matched, category)
     }
 
     /** Primeira categoria cuja keyword aparece no texto vence (ordem do parser_rules.json). */
@@ -66,20 +79,20 @@ class TransactionClassifier(private val rules: ParserRules) {
             rule.keywords.any { text.contains(TextNormalizer.normalize(it)) }
         }?.name
 
-    private fun amountPatterns(bank: BankRules?): List<Regex> =
-        (bank?.amountPatterns.orEmpty() + rules.generic.amountPatterns)
+    private fun amountPatterns(override: AppOverride?): List<Regex> =
+        (override?.amountPatterns.orEmpty() + rules.generic.amountPatterns)
             .map { Regex(it, RegexOption.IGNORE_CASE) }
 
-    private fun extractAmount(text: String, bank: BankRules?): Long? {
-        for (pattern in amountPatterns(bank)) {
+    private fun extractAmount(text: String, override: AppOverride?): Long? {
+        for (pattern in amountPatterns(override)) {
             val group = pattern.find(text)?.groupValues?.getOrNull(1) ?: continue
             Money.parseBrlToCents(group)?.let { return it }
         }
         return null
     }
 
-    private fun extractCounterparty(rawText: String, normalized: String, bank: BankRules?): String? {
-        val patterns = (bank?.counterpartyPatterns.orEmpty() + rules.generic.counterpartyPatterns)
+    private fun extractCounterparty(rawText: String, normalized: String, override: AppOverride?): String? {
+        val patterns = (override?.counterpartyPatterns.orEmpty() + rules.generic.counterpartyPatterns)
         for (raw in patterns) {
             val regex = Regex(raw, setOf(RegexOption.IGNORE_CASE))
             // Tenta todas as ocorrências do padrão, não só a primeira: sem o "$" no fim (removido

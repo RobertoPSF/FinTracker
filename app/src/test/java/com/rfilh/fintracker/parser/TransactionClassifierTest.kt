@@ -167,6 +167,44 @@ class TransactionClassifierTest {
     }
 
     @Test
+    fun `pix agendado ou recusado nao vira transacao mesmo com valor`() {
+        assertEquals(
+            ParseResult.Ignored,
+            classifier.classify("com.novafintech.app", "Pix agendado", "Pix de R\$ 200,00 agendado para amanhã às 09:00.")
+        )
+        assertEquals(
+            ParseResult.Ignored,
+            classifier.classify("com.novafintech.app", "Pix recusado", "Pix de R\$ 80,00 recusado pelo destinatário.")
+        )
+    }
+
+    @Test
+    fun `mensagem nao transacional nao e capturada por engano`() {
+        // "enviado"/"compra" aparecem aqui, mas não como confirmação de pagamento — cobre o
+        // risco de um stem genérico demais (ex. "envi", "compra") virar falso positivo.
+        assertEquals(
+            ParseResult.Ignored,
+            classifier.classify("com.novafintech.app", "Comprovante disponível", "Seu comprovante foi enviado para o seu e-mail.")
+        )
+    }
+
+    @Test
+    fun `appLabel do Android e usado como nome quando nao ha override cadastrado`() {
+        val result = classifier.classify(
+            "com.novafintech.app", "Pix recebido", "Você recebeu um Pix de R\$ 80,00 de Carla", appLabel = "Nova Fintech"
+        )
+        assertTrue(result is ParseResult.Parsed)
+        assertEquals("Nova Fintech", (result as ParseResult.Parsed).bankName)
+    }
+
+    @Test
+    fun `stem generico credita reconhece fraseado nunca cadastrado`() {
+        val r = parsed("com.outrafintech.app", "Notificação", "Você recebeu um crédito de R\$ 80,00 de Carla Dias")
+        assertEquals(TransactionType.INCOME, r.type)
+        assertEquals(8000L, r.amountCents)
+    }
+
+    @Test
     fun `parse de valores brl`() {
         assertEquals(123456L, Money.parseBrlToCents("1.234,56"))
         assertEquals(500L, Money.parseBrlToCents("R$ 5,00"))

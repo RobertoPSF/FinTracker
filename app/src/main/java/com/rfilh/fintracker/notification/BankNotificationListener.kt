@@ -56,19 +56,24 @@ class BankNotificationListener : NotificationListenerService() {
             return
         }
 
-        // Banco já cadastrado em parser_rules.json: sempre processa. App desconhecido (fintech
-        // nova, banco pequeno, o que vier a existir): só processa se o texto claramente fala de
-        // Pix — evita varrer notificação de qualquer app instalado, mas não exige cadastro prévio
-        // pra capturar um banco que ainda nem existia quando o app foi lançado.
-        val isKnownBank = container.rules().isKnownBank(pkg)
-        if (!isKnownBank && !looksLikePix(title, text)) return
-        if (!isKnownBank) Log.d(TAG, "$pkg: app desconhecido, mas parece Pix — tentando classificar")
+        // App já com override cadastrado em parser_rules.json: sempre processa. App desconhecido
+        // (fintech nova, banco pequeno, o que vier a existir): só processa se o texto claramente
+        // fala de Pix — evita varrer notificação de qualquer app instalado, mas não exige
+        // cadastro prévio pra capturar um banco que ainda nem existia quando o app foi lançado.
+        val hasOverride = container.rules().hasOverride(pkg)
+        if (!hasOverride && !looksLikePix(title, text)) return
+
+        // Sem override, usa o nome de exibição do próprio Android em vez do package cru
+        // (ex. "Nova Fintech" em vez de "com.novafintech.app").
+        val appLabel = if (hasOverride) null else resolveAppLabel(pkg)
+        if (!hasOverride) Log.d(TAG, "$pkg ($appLabel): app desconhecido, mas parece Pix — tentando classificar")
 
         val incoming = NotificationIngestor.Incoming(
             packageName = pkg,
             title = title,
             body = text,
-            postedAt = if (sbn.postTime > 0) sbn.postTime else System.currentTimeMillis()
+            postedAt = if (sbn.postTime > 0) sbn.postTime else System.currentTimeMillis(),
+            appLabel = appLabel
         )
 
         scope.launch {
@@ -97,6 +102,11 @@ class BankNotificationListener : NotificationListenerService() {
         val combined = TextNormalizer.normalize(listOfNotNull(title, text).joinToString(" "))
         return PIX_WORD.containsMatchIn(combined)
     }
+
+    private fun resolveAppLabel(pkg: String): String? = runCatching {
+        val info = packageManager.getApplicationInfo(pkg, 0)
+        packageManager.getApplicationLabel(info).toString()
+    }.getOrNull()
 
     companion object {
         private const val TAG = "BankNotifListener"

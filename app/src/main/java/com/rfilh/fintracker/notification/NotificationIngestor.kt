@@ -23,7 +23,10 @@ class NotificationIngestor(
         val packageName: String,
         val title: String?,
         val body: String?,
-        val postedAt: Long
+        val postedAt: Long,
+        /** Nome do app resolvido pelo Android (ex. `PackageManager.getApplicationLabel`) —
+         *  usado como nome de exibição quando o pacote não tem override cadastrado. */
+        val appLabel: String? = null
     )
 
     sealed interface Outcome {
@@ -53,11 +56,29 @@ class NotificationIngestor(
         )
         if (rawId == -1L) return Outcome.Duplicate
 
-        val result = classifierProvider().classify(incoming.packageName, incoming.title, incoming.body)
+        val result = classifierProvider().classify(incoming.packageName, incoming.title, incoming.body, incoming.appLabel)
         if (result !is ParseResult.Parsed) {
             rawDao.markParsed(rawId)
             if (autoPurgeRaw()) rawDao.purgeOne(rawId)
             return Outcome.Ignored
+        }
+
+        // Alguns bancos mandam duas notificações pro mesmo pagamento ("Pix enviado" e, segundos
+        // depois, "Pix realizado com sucesso") — textos diferentes o bastante pra escapar do
+        // dedup por hash. Sem isso, viraria transação duplicada.
+        if (result.type != TransactionType.UNKNOWN && (result.amountCents ?: 0L) > 0L) {
+            val similar = transactionDao.countSimilar(
+                bankPackage = incoming.packageName,
+                amountCents = result.amountCents!!,
+                type = result.type,
+                from = incoming.postedAt - SIMILAR_WINDOW_MS,
+                to = incoming.postedAt + SIMILAR_WINDOW_MS
+            )
+            if (similar > 0) {
+                rawDao.markParsed(rawId)
+                if (autoPurgeRaw()) rawDao.purgeOne(rawId)
+                return Outcome.Duplicate
+            }
         }
 
         val entity = TransactionEntity(
@@ -77,5 +98,11 @@ class NotificationIngestor(
         rawDao.markParsed(rawId)
         if (autoPurgeRaw()) rawDao.purgeOne(rawId)
         return Outcome.Stored(id, entity.type, entity.category, entity.yearMonth)
+    }
+
+    private companion object {
+        /** Janela de tolerância pra considerar duas notificações o mesmo pagamento confirmado
+         *  em duas etapas, não duas transações reais de mesmo valor. */
+        const val SIMILAR_WINDOW_MS = 3 * 60 * 1000L
     }
 }

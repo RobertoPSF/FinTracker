@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import com.rfilh.fintracker.domain.model.TransactionType
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -153,4 +154,13 @@ interface TransactionDao {
             "WHERE type = 'EXPENSE' AND category = :category AND yearMonth = :yearMonth"
     )
     suspend fun categorySpend(category: String, yearMonth: String): Long
+
+    /** Mesmo pacote/valor/tipo num intervalo curto — detecta duas notificações (ex. "Pix
+     *  enviado" + "Pix realizado com sucesso") do mesmo pagamento, não duas transações reais. */
+    @Query(
+        "SELECT COUNT(*) FROM transactions " +
+            "WHERE bankPackage = :bankPackage AND amountCents = :amountCents AND type = :type " +
+            "AND occurredAt BETWEEN :from AND :to"
+    )
+    suspend fun countSimilar(bankPackage: String, amountCents: Long, type: TransactionType, from: Long, to: Long): Int
 }
