@@ -41,11 +41,10 @@ class BankNotificationListener : NotificationListenerService() {
         // já cadastrados deveriam SEMPRE virar transação, então qualquer desvio aqui é bug real.
         val hasOverride = container.rules().hasOverride(pkg)
 
-        if (sbn.notification.flags and Notification.FLAG_GROUP_SUMMARY != 0) {
-            Log.d(TAG, "$pkg: ignorado (FLAG_GROUP_SUMMARY)")
-            return
-        }
-
+        // Alguns bancos (ex. BB) marcam a própria notificação do Pix como resumo de grupo —
+        // descartar FLAG_GROUP_SUMMARY sem olhar o conteúdo perdia essas notificações por
+        // completo. A dedup por hash/similaridade no ingestor já cobre o caso normal (resumo +
+        // notificação-filha com o mesmo conteúdo), então não precisamos filtrar aqui.
         val extras = sbn.notification.extras
         if (extras == null) {
             Log.w(TAG, "$pkg: notificação sem extras")
