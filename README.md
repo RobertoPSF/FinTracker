@@ -1,99 +1,66 @@
 # FinTracker
 
-App Android que lê notificações de bancos, classifica transações (entrada/saída) e monta extrato e balanço mensal — 100% local, banco criptografado (SQLCipher).
+App Android que lê as notificações dos seus bancos, classifica cada transação automaticamente (entrada/saída, categoria) e monta extrato e balanço mensal — sem depender de você lançar nada manualmente. **100% local**: o app não tem permissão de internet, nada sai do aparelho, e o banco de dados é criptografado (SQLCipher).
 
-## Estado
+## Como baixar
 
-| Fase | Escopo | Status |
-|---|---|---|
-| 0 | Setup, Room + SQLCipher, estrutura de pacotes | feito |
-| 1 | `NotificationListenerService`, permissão, raw persistida | feito |
-| 2 | Classificação híbrida, dedup por hash, testes | feito |
-| 3 | Entidades, migrações versionadas, agrupamento mensal, fila de revisão | feito |
-| 4 | Extrato por banco, balanço, revisão, edição | feito |
-| 5 | Empréstimo/cobrança (campos + tela "A cobrar") | feito |
-| 6 | Bloqueio biométrico | pendente (dependência já incluída) |
-| 7 | Export CSV (`data/repo/Exporter.kt`) + import OFX/CSV | parcial |
-| 8-9 | Categorias, gráficos, F-Droid | pendente |
+O APK é publicado automaticamente a cada versão em **[Releases](https://github.com/RobertoPSF/FinTracker/releases/latest)** — esse link sempre aponta pra versão mais recente.
 
-## Estrutura
+1. Baixe o `.apk` da release mais recente pelo celular.
+2. Como o app não vem da Play Store, o Android vai pedir permissão pra instalar de "fonte desconhecida" na primeira vez — normal, é só confirmar.
+3. Abra o app e conceda o acesso a notificações quando ele pedir (é o que permite capturar os lançamentos dos bancos automaticamente).
 
-```
-app/src/main/java/com/rfilh/fintracker/
-  core/          Money, Dates, Hashing, TextNormalizer
-  parser/        ParserRules, TransactionClassifier, RulesProvider
-  notification/  BankNotificationListener, NotificationIngestor, NotificationAccess
-  domain/        modelos + interface de repositório
-  data/          Room (entidades, DAOs, SQLCipher), repositório
-  ui/            Compose (nav, telas, viewmodels)
-app/src/main/assets/parser_rules.json   regras de parsing (externas ao código)
-```
+Requer Android 7.0 (API 24) ou superior.
 
-## Build
+## O que o app faz hoje
 
-1. Abrir a pasta no Android Studio (Ladybug+) e sincronizar. O wrapper Gradle (`gradlew`, `gradle-wrapper.jar`) é gerado pelo Studio; alternativamente: `gradle wrapper --gradle-version 8.9`.
-2. `./gradlew :app:testDebugUnitTest` roda os testes do parser.
-3. `./gradlew :app:installDebug`.
+**Captura e classificação automática**
+- Lê as notificações dos apps de banco/carteira instalados (lista em `parser_rules.json`, 16 bancos já cobertos: Nubank, Inter, Itaú, Itaú iti, C6, PicPay, Mercado Pago, Caixa, Banco do Brasil, Santander, Bradesco, Neon, PagBank, Will Bank, Original, Google Pay).
+- Classifica cada notificação como entrada, saída ou desconhecida, extrai o valor e (quando dá) a contraparte.
+- Categoriza automaticamente por palavra-chave do estabelecimento (Alimentação, Transporte, Assinaturas, Compras, Saúde, Moradia).
+- Deduplica notificações reentregues pelo sistema.
+- O que fica com baixa confiança cai numa fila de revisão manual, em vez de virar transação errada silenciosamente.
 
-Requisitos: JDK 17, AGP 8.5.2, compileSdk 34, minSdk 24.
+**Visão financeira**
+- Extrato geral ou por banco, navegável mês a mês.
+- Balanço do mês (entradas, saídas, saldo) na tela inicial.
+- Gráfico de entradas x saídas — visão mensal (últimos 6 meses) ou anual (Jan-Dez do ano corrente).
+- Detecção automática de gastos recorrentes (mesma contraparte e valor parecido em meses seguidos).
 
-## Uso
+**Empréstimos**
+- Marcar uma transação como "emprestei" ou "peguei emprestado", com pessoa e status.
+- Tela "A cobrar" consolidando quanto cada pessoa te deve.
 
-1. Abrir o app → botão "Conceder" → Configurações > Acesso a notificações → habilitar FinTracker.
-2. Notificações dos apps listados em `parser_rules.json` são capturadas, classificadas e persistidas.
-3. Transações com confiança baixa/`UNKNOWN` caem na fila "Revisar".
+**Edição e lançamento manual**
+- Qualquer transação capturada pode ser editada (tipo, valor, contraparte, categoria, observação).
+- Lançamento manual pra quando não veio notificação nenhuma.
 
-## Parsing
+**Privacidade e segurança**
+- Bloqueio biométrico ou por PIN na abertura do app.
+- Descarte automático (ou sob demanda) do texto bruto das notificações depois que já viraram transação.
+- Exportação anonimizada de notificações que o app não conseguiu classificar — útil pra reportar um banco novo sem expor dados pessoais.
+- Backup e restauração das transações em JSON.
+- Limites de gasto por categoria, com aviso quando estourar no mês.
 
-`TransactionClassifier` é Kotlin puro (sem Android), testável direto:
+**Aparência**
+- Tema claro e escuro (alternável nas configurações).
 
-- keywords → `INCOME` / `EXPENSE` (a que aparece primeiro no texto vence)
-- regex → valor (`R$ 1.234,56` → `123456` centavos)
-- regex → contraparte (best-effort, com restauração de acentos/caixa)
-- `Confidence`: HIGH (banco conhecido + tipo + valor), MEDIUM (sem banco conhecido), LOW (sem valor)
-- Sem tipo reconhecido: ignora se bater lista `ignore` ou se não houver valor
+## Segurança técnica
 
-Adicionar um banco = adicionar entrada em `parser_rules.json` (`package`, `name`, opcionalmente `ignore`/`income`/`expense`/`amountPatterns`/`counterpartyPatterns`) e um teste em `TransactionClassifierTest`.
-`RulesProvider` prioriza `filesDir/parser_rules_override.json`, permitindo atualizar regras sem release.
+- Sem permissão `INTERNET` — o app não faz nenhuma requisição de rede.
+- Banco de dados Room + SQLCipher, com passphrase de 32 bytes aleatórios guardada em `EncryptedSharedPreferences` (Android Keystore).
+- Backup em nuvem do próprio Android desativado (`allowBackup=false`).
 
-## Dedup
+## Para desenvolvedores
 
-Índice único em `raw_notification.hash`, com hash = SHA-256 de `pacote|título|corpo|janela de 60s`. Insert com `OnConflictStrategy.IGNORE`; retorno `-1` = duplicata.
+### Build local
 
-## Segurança
+1. Abrir a pasta no Android Studio e sincronizar (o wrapper do Gradle já está commitado no repo).
+2. `./gradlew :app:testDebugUnitTest` — testes de parser/classificador/core (Kotlin puro, sem Android).
+3. `./gradlew :app:installDebug` — instala no emulador/aparelho conectado.
 
-- SQLCipher via `SupportOpenHelperFactory`; passphrase de 32 bytes aleatórios em `EncryptedSharedPreferences` (Android Keystore).
-- Backup em nuvem desativado (`allowBackup=false` + `data_extraction_rules`).
-- `RawNotificationDao.purgeParsedContent()` apaga o conteúdo bruto mantendo o hash para dedup.
+Requisitos: JDK 17, AGP 8.13.2, Kotlin 2.0.20, compileSdk 34, minSdk 24.
 
-## Bancos que não notificam
+### Como contribuir
 
-Nubank e Mercado Pago não emitem notificação de Pix enviado. Três saídas, em ordem de esforço:
-
-1. **Ativar avisos no app do banco** (Nubank: Perfil > Notificações; Mercado Pago: Seu perfil > Notificações). Cobre parte dos casos.
-2. **Importar extrato** (tela "Importar"): OFX ou CSV exportado pelo app do banco. Dedup em duas camadas — hash da linha e cruzamento com transações já capturadas por notificação (mesmo banco, mesmo valor, ±12h).
-3. **Lançar manualmente** (botão "+ Lançar"), com data editável.
-
-Open Finance/agregadores (Pluggy, Belvo) resolveriam de forma automática, mas exigem cadastro de empresa e chaves — fora do escopo local-first.
-
-## Diagnóstico de captura
-
-Banco não aparece? Tela "Diagnóstico":
-
-1. Ligar "Capturar todos os apps" — passa a gravar notificação de qualquer app, sem classificar.
-2. Provocar uma notificação do banco.
-3. Conferir o pacote real e o texto extraído; copiar e adicionar/ajustar em `parser_rules.json`.
-4. Desligar o modo depois.
-
-Regras de banco aceitam `aliases` (outros pacotes) e `matchPrefix` (casa qualquer pacote com o mesmo prefixo — usado no Banco do Brasil).
-
-## Limitações conhecidas
-
-- `NotificationListenerService` pode ser desvinculado pelo sistema; `NotificationAccess.rebind()` existe, mas convém orientar o usuário a isentar o app da otimização de bateria.
-- Notificação agrupada/resumo é descartada (`FLAG_GROUP_SUMMARY`).
-- Valores em notificações sem `R$` explícito não são extraídos.
-- Importação lê apenas texto (OFX/CSV). PDF de comprovante não é suportado.
-
-## Licença
-
-MIT — ver `LICENSE`.
+Basta abrir um PR novo para o repositório.

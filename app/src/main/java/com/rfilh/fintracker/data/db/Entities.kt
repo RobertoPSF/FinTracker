@@ -53,6 +53,14 @@ data class TransactionEntity(
     val loanAmountCents: Long? = null
 )
 
+@Entity(tableName = "category_budget")
+data class CategoryBudgetEntity(
+    @PrimaryKey val category: String,
+    val limitCents: Long,
+    /** yyyy-MM do último mês em que o alerta de estouro já foi disparado, evita repetir. */
+    val alertedYearMonth: String? = null
+)
+
 data class BankSummaryRow(
     val bankPackage: String,
     val bankName: String,
@@ -62,6 +70,12 @@ data class BankSummaryRow(
 )
 
 data class MonthTotalsRow(
+    val incomeCents: Long,
+    val expenseCents: Long
+)
+
+data class MonthlyTrendRow(
+    val yearMonth: String,
     val incomeCents: Long,
     val expenseCents: Long
 )

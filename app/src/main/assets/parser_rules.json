@@ -63,6 +63,32 @@
       "\\bno\\s+([^.,!;\\n]{2,40})$",
       "\\bem\\s+([^.,!;\\n]{2,40})$",
       "(?:de|do|da)\\s+([^.,!;\\n]{2,40})$"
+    ],
+    "categories": [
+      {
+        "name": "Alimentação",
+        "keywords": ["ifood", "rappi", "restaurante", "lanchonete", "padaria", "supermercado", "mercado"]
+      },
+      {
+        "name": "Transporte",
+        "keywords": ["uber", "99app", "99pop", "posto", "combustivel", "estacionamento", "pedagio"]
+      },
+      {
+        "name": "Assinaturas",
+        "keywords": ["netflix", "spotify", "amazon prime", "disney+", "hbo max", "youtube premium", "icloud"]
+      },
+      {
+        "name": "Compras",
+        "keywords": ["mercado livre", "shopee", "aliexpress", "magazine luiza", "americanas", "shopping"]
+      },
+      {
+        "name": "Saúde",
+        "keywords": ["farmacia", "drogaria", "hospital", "clinica", "laboratorio"]
+      },
+      {
+        "name": "Moradia",
+        "keywords": ["condominio", "aluguel", "energia", "luz", "agua", "internet"]
+      }
     ]
   },
   "banks": [

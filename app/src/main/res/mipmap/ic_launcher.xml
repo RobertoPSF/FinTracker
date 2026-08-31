@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ícone plano (fallback universal e API < 26): fundo arredondado + carteira com lupa,
+     mesma arte de app/src/main/res/drawable/ic_launcher_foreground.xml sem o encolhimento
+     de safe-zone, já que aqui o formato quadriculado é o desenho final, não uma camada
+     que o launcher vai mascarar. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="1024"
+    android:viewportHeight="1024">
+    <path
+        android:pathData="M224 0 H800 A224 224 0 0 1 1024 224 V800 A224 224 0 0 1 800 1024 H224 A224 224 0 0 1 0 800 V224 A224 224 0 0 1 224 0 Z"
+        android:fillColor="#1B3A5C" />
+    <path
+        android:pathData="M210 420 h604 a26 26 0 0 1 26 26 v320 a48 48 0 0 1 -48 48 H232 a48 48 0 0 1 -48 -48 V468 a48 48 0 0 1 26 -48 Z"
+        android:strokeColor="#8FB8DE"
+        android:strokeWidth="34" />
+    <path
+        android:pathData="M210 420 l60 -140 a40 40 0 0 1 50 -22 l360 118"
+        android:strokeColor="#8FB8DE"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="34" />
+    <path
+        android:pathData="M580 540 H680 A20 20 0 0 1 700 560 V610 A20 20 0 0 1 680 630 H580 A20 20 0 0 1 560 610 V560 A20 20 0 0 1 580 540 Z"
+        android:fillColor="#8FB8DE" />
+    <path
+        android:pathData="M442 758 a118 118 0 1 0 236 0 a118 118 0 1 0 -236 0"
+        android:fillColor="#1B3A5C"
+        android:strokeColor="#F4F6F8"
+        android:strokeWidth="34" />
+    <path
+        android:pathData="M642 840 L720 918"
+        android:strokeColor="#F4F6F8"
+        android:strokeLineCap="round"
+        android:strokeWidth="38" />
+</vector>

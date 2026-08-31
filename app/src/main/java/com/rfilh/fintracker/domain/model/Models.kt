@@ -46,3 +46,20 @@ data class PersonBalance(
     val pendingCents: Long,
     val count: Int
 )
+
+data class CategoryBudget(
+    val category: String,
+    val limitCents: Long
+)
+
+data class BackupImportSummary(
+    val imported: Int,
+    val skipped: Int
+)
+
+data class RawCapture(
+    val packageName: String,
+    val title: String?,
+    val body: String?,
+    val postedAt: Long
+)

@@ -1,6 +1,7 @@
 package com.rfilh.fintracker
 
 import android.app.Application
+import com.rfilh.fintracker.notification.BudgetAlertNotifier
 
 class FinTrackerApp : Application() {
 
@@ -10,5 +11,6 @@ class FinTrackerApp : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
+        BudgetAlertNotifier.ensureChannel(this)
     }
 }

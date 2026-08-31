@@ -77,6 +77,31 @@ class TransactionClassifierTest {
     }
 
     @Test
+    fun `pix recebido no BB com texto real do app`() {
+        val r = parsed(
+            "br.com.bb.android",
+            "Pix Recebido",
+            "Que ótimo! Roberto P Santos Fh, CPF/CNPJ ***.746.614-** , enviou um Pix " +
+                "de R\$ 0,01, da Instituição MERCADO PAGO IP LTDA, para sua conta Corrente às 11:52."
+        )
+        assertEquals(TransactionType.INCOME, r.type)
+        assertEquals(1L, r.amountCents)
+        assertEquals(Confidence.HIGH, r.confidence)
+    }
+
+    @Test
+    fun `categoriza por keyword de estabelecimento`() {
+        val food = parsed("com.nu.production", "Nubank", "Compra aprovada: R$ 45,00 no IFOOD")
+        assertEquals("Alimentação", food.category)
+
+        val subscription = parsed("com.picpay", "PicPay", "Você pagou R$ 39,90 para NETFLIX")
+        assertEquals("Assinaturas", subscription.category)
+
+        val uncategorized = parsed("com.nu.production", "Nubank", "Compra aprovada: R$ 10,00 no ACME")
+        assertEquals(null, uncategorized.category)
+    }
+
+    @Test
     fun `compra com preposicao em`() {
         val r = parsed("com.c6bank.app", "C6", "Compra aprovada de R$ 12,00 em UBER TRIP")
         assertEquals(TransactionType.EXPENSE, r.type)

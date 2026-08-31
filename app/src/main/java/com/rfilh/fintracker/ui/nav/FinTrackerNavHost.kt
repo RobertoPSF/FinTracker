@@ -12,13 +12,17 @@ import androidx.navigation.navArgument
 import com.rfilh.fintracker.AppContainer
 import com.rfilh.fintracker.ui.screens.EditScreen
 import com.rfilh.fintracker.ui.screens.HomeScreen
+import com.rfilh.fintracker.ui.screens.InsightsScreen
 import com.rfilh.fintracker.ui.screens.ReceivablesScreen
 import com.rfilh.fintracker.ui.screens.ReviewScreen
+import com.rfilh.fintracker.ui.screens.SettingsScreen
 import com.rfilh.fintracker.ui.screens.StatementScreen
 import com.rfilh.fintracker.ui.vm.EditViewModel
 import com.rfilh.fintracker.ui.vm.HomeViewModel
+import com.rfilh.fintracker.ui.vm.InsightsViewModel
 import com.rfilh.fintracker.ui.vm.ReceivablesViewModel
 import com.rfilh.fintracker.ui.vm.ReviewViewModel
+import com.rfilh.fintracker.ui.vm.SettingsViewModel
 import com.rfilh.fintracker.ui.vm.StatementViewModel
 
 object Routes {
@@ -27,6 +31,8 @@ object Routes {
     const val REVIEW = "review"
     const val EDIT = "edit"
     const val RECEIVABLES = "receivables"
+    const val INSIGHTS = "insights"
+    const val SETTINGS = "settings"
 
     fun statement(bankPackage: String) = "$STATEMENT?bank=$bankPackage"
     fun edit(id: Long) = "$EDIT/$id"
@@ -47,7 +53,9 @@ fun FinTrackerNavHost(container: AppContainer) {
                 onOpenBank = { navController.navigate(Routes.statement(it)) },
                 onOpenAll = { navController.navigate("${Routes.STATEMENT}?bank=") },
                 onOpenReview = { navController.navigate(Routes.REVIEW) },
-                onOpenReceivables = { navController.navigate(Routes.RECEIVABLES) }
+                onOpenReceivables = { navController.navigate(Routes.RECEIVABLES) },
+                onOpenInsights = { navController.navigate(Routes.INSIGHTS) },
+                onOpenSettings = { navController.navigate(Routes.SETTINGS) }
             )
         }
 
@@ -85,7 +93,7 @@ fun FinTrackerNavHost(container: AppContainer) {
             val id = entry.arguments?.getLong("id") ?: 0L
             val vm: EditViewModel = viewModel(
                 key = "edit-$id",
-                factory = viewModelFactory { initializer { EditViewModel(container.repository, id) } }
+                factory = viewModelFactory { initializer { EditViewModel(container.repository, container, id) } }
             )
             EditScreen(vm = vm, onDone = { navController.popBackStack() })
         }
@@ -95,6 +103,20 @@ fun FinTrackerNavHost(container: AppContainer) {
                 factory = viewModelFactory { initializer { ReceivablesViewModel(container.repository) } }
             )
             ReceivablesScreen(vm = vm, onBack = { navController.popBackStack() })
+        }
+
+        composable(Routes.INSIGHTS) {
+            val vm: InsightsViewModel = viewModel(
+                factory = viewModelFactory { initializer { InsightsViewModel(container.repository) } }
+            )
+            InsightsScreen(vm = vm, onBack = { navController.popBackStack() })
+        }
+
+        composable(Routes.SETTINGS) {
+            val vm: SettingsViewModel = viewModel(
+                factory = viewModelFactory { initializer { SettingsViewModel(container.repository, container) } }
+            )
+            SettingsScreen(vm = vm, onBack = { navController.popBackStack() })
         }
     }
 }

@@ -4,12 +4,19 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 @Serializable
+data class CategoryRule(
+    val name: String,
+    val keywords: List<String> = emptyList()
+)
+
+@Serializable
 data class GenericRules(
     val ignore: List<String> = emptyList(),
     val income: List<String> = emptyList(),
     val expense: List<String> = emptyList(),
     val amountPatterns: List<String> = emptyList(),
-    val counterpartyPatterns: List<String> = emptyList()
+    val counterpartyPatterns: List<String> = emptyList(),
+    val categories: List<CategoryRule> = emptyList()
 )
 
 @Serializable

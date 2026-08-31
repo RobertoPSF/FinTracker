@@ -49,6 +49,7 @@ class TransactionClassifier(private val rules: ParserRules) {
         if (type == TransactionType.UNKNOWN && amount == null) return ParseResult.Ignored
 
         val counterparty = extractCounterparty(rawText, text, bank)
+        val category = extractCategory(text)
 
         val confidence = when {
             type != TransactionType.UNKNOWN && amount != null && bank != null -> Confidence.HIGH
@@ -56,8 +57,14 @@ class TransactionClassifier(private val rules: ParserRules) {
             else -> Confidence.LOW
         }
 
-        return ParseResult.Parsed(bankName, type, amount, counterparty, confidence, matched)
+        return ParseResult.Parsed(bankName, type, amount, counterparty, confidence, matched, category)
     }
+
+    /** Primeira categoria cuja keyword aparece no texto vence (ordem do parser_rules.json). */
+    private fun extractCategory(text: String): String? =
+        rules.generic.categories.firstOrNull { rule ->
+            rule.keywords.any { text.contains(TextNormalizer.normalize(it)) }
+        }?.name
 
     private fun amountPatterns(bank: BankRules?): List<Regex> =
         (bank?.amountPatterns.orEmpty() + rules.generic.amountPatterns)

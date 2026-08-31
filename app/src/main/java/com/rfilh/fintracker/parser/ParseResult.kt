@@ -13,6 +13,7 @@ sealed interface ParseResult {
         val amountCents: Long?,
         val counterparty: String?,
         val confidence: Confidence,
-        val matchedKeyword: String?
+        val matchedKeyword: String?,
+        val category: String? = null
     ) : ParseResult
 }
