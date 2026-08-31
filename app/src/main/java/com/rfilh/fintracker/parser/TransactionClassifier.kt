@@ -81,10 +81,15 @@ class TransactionClassifier(private val rules: ParserRules) {
     private fun extractCounterparty(rawText: String, normalized: String, bank: BankRules?): String? {
         val patterns = (bank?.counterpartyPatterns.orEmpty() + rules.generic.counterpartyPatterns)
         for (raw in patterns) {
-            val match = Regex(raw, setOf(RegexOption.IGNORE_CASE)).find(normalized) ?: continue
-            val candidate = match.groupValues.getOrNull(1)?.trim() ?: continue
-            val cleaned = cleanCounterparty(candidate)
-            if (cleaned != null) return restoreCase(cleaned, rawText)
+            val regex = Regex(raw, setOf(RegexOption.IGNORE_CASE))
+            // Tenta todas as ocorrências do padrão, não só a primeira: sem o "$" no fim (removido
+            // pra funcionar com texto que continua depois do nome, ex. ponto final), a primeira
+            // ocorrência pode ser lixo (ex. "de" colado no valor) e a de verdade vir depois.
+            for (match in regex.findAll(normalized)) {
+                val candidate = match.groupValues.getOrNull(1)?.trim() ?: continue
+                val cleaned = cleanCounterparty(candidate)
+                if (cleaned != null) return restoreCase(cleaned, rawText)
+            }
         }
         return null
     }
@@ -97,6 +102,8 @@ class TransactionClassifier(private val rules: ParserRules) {
             .trim(' ', '.', ',', ':', ';', '-')
         if (value.length < 2 || value.length > 40) return null
         if (value.all { it.isDigit() }) return null
+        // "para sua conta Corrente/Poupança" (a própria conta do usuário) não é contraparte.
+        if (Regex("^(sua |a )?conta\\b").containsMatchIn(value)) return null
         return value
     }
 

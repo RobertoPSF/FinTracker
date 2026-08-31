@@ -24,8 +24,14 @@
       "voce recebeu",
       "pix recebido",
       "transferencia recebida",
+      "transferencia pix recebida",
+      "recebimento via pix",
+      "recebimento pix",
       "recebeu um pix",
       "recebemos",
+      "pix creditado",
+      "voce tem um pix",
+      "caiu um pix",
       "deposito",
       "credito de",
       "entrada de",
@@ -41,8 +47,16 @@
       "pagamento aprovado",
       "pagamento efetuado",
       "pagamento de",
+      "pagamento via pix",
       "pix enviado",
+      "pix enviado com sucesso",
+      "pix realizado",
+      "pix realizado com sucesso",
+      "pix pago",
+      "pix debitado",
       "transferencia enviada",
+      "transferencia pix enviada",
+      "envio via pix",
       "voce enviou",
       "voce transferiu",
       "debito de",
@@ -59,10 +73,10 @@
     "counterpartyPatterns": [
       "(?:recebeu|recebido)\\s+(?:de|do|da)\\s+([^.,!;\\n]{2,40})",
       "(?:enviado|enviou|transferiu|pagou|pagamento)\\s+(?:para|pra|ao|a)\\s+([^.,!;\\n]{2,40})",
-      "(?:para|pra)\\s+([^.,!;\\n]{2,40})$",
-      "\\bno\\s+([^.,!;\\n]{2,40})$",
-      "\\bem\\s+([^.,!;\\n]{2,40})$",
-      "(?:de|do|da)\\s+([^.,!;\\n]{2,40})$"
+      "(?:para|pra)\\s+([^.,!;\\n]{2,40})",
+      "\\bno\\s+([^.,!;\\n]{2,40})",
+      "\\bem\\s+([^.,!;\\n]{2,40})",
+      "(?:de|do|da)\\s+([^.,!;\\n]{2,40})"
     ],
     "categories": [
       {
@@ -161,6 +175,10 @@
       "name": "Banco do Brasil",
       "ignore": [
         "fatura"
+      ],
+      "counterpartyPatterns": [
+        "otimo!\\s+([^.,!;\\n]{2,40})",
+        "para\\s+([^.,!;\\n]{2,40})"
       ]
     },
     {

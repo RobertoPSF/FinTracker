@@ -87,6 +87,21 @@ class TransactionClassifierTest {
         assertEquals(TransactionType.INCOME, r.type)
         assertEquals(1L, r.amountCents)
         assertEquals(Confidence.HIGH, r.confidence)
+        assertEquals("Roberto P Santos Fh", r.counterparty)
+    }
+
+    @Test
+    fun `pix enviado no BB com texto real do app`() {
+        val r = parsed(
+            "br.com.bb.android",
+            "Pix Enviado",
+            "Pix de R\$ 150,00 enviado da conta Corrente para Maria Souza, " +
+                "Instituição Nu Pagamentos S.A., às 14:30."
+        )
+        assertEquals(TransactionType.EXPENSE, r.type)
+        assertEquals(15000L, r.amountCents)
+        assertEquals(Confidence.HIGH, r.confidence)
+        assertEquals("Maria Souza", r.counterparty)
     }
 
     @Test
@@ -133,6 +148,21 @@ class TransactionClassifierTest {
     fun `banco desconhecido reduz confianca`() {
         val r = parsed("com.banco.inexistente", "Banco X", "Você recebeu R$ 10,00 de ANA")
         assertEquals(TransactionType.INCOME, r.type)
+        assertEquals(Confidence.MEDIUM, r.confidence)
+    }
+
+    @Test
+    fun `fintech nunca cadastrada ainda assim classifica corretamente pelas regras genericas`() {
+        // Sem nenhuma entrada em parser_rules.json para esse pacote/fraseado — cobre o caso de
+        // um banco/fintech que passa a existir depois do app já lançado.
+        val r = parsed(
+            "com.novafintech.app",
+            "Pix realizado",
+            "Pix realizado com sucesso no valor de R\$ 75,50 para João Pereira às 09:15."
+        )
+        assertEquals(TransactionType.EXPENSE, r.type)
+        assertEquals(7550L, r.amountCents)
+        assertEquals("João Pereira", r.counterparty)
         assertEquals(Confidence.MEDIUM, r.confidence)
     }
 

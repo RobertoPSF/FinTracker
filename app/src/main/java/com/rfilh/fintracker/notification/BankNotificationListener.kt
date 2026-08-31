@@ -5,6 +5,7 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
 import com.rfilh.fintracker.FinTrackerApp
+import com.rfilh.fintracker.core.TextNormalizer
 import com.rfilh.fintracker.domain.model.TransactionType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -22,9 +23,19 @@ class BankNotificationListener : NotificationListenerService() {
         Log.i(TAG, "listener conectado")
     }
 
+    /**
+     * O sistema desvincula o listener periodicamente (mais agressivo em Samsung/Xiaomi com
+     * economia de bateria) — sem isso, `NotificationAccess.rebind()` nunca era chamado e o
+     * app parava de capturar notificações silenciosamente até o usuário desligar/religar a
+     * permissão manualmente.
+     */
+    override fun onListenerDisconnected() {
+        Log.w(TAG, "listener desvinculado pelo sistema, solicitando rebind")
+        NotificationAccess.rebind(applicationContext)
+    }
+
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         val pkg = sbn.packageName ?: return
-        if (!container.rules().isKnownBank(pkg)) return
         if (sbn.notification.flags and Notification.FLAG_GROUP_SUMMARY != 0) {
             Log.d(TAG, "$pkg: ignorado (FLAG_GROUP_SUMMARY)")
             return
@@ -44,6 +55,14 @@ class BankNotificationListener : NotificationListenerService() {
             Log.w(TAG, "$pkg: sem título/texto extraível (extras: ${extras.keySet().joinToString()})")
             return
         }
+
+        // Banco já cadastrado em parser_rules.json: sempre processa. App desconhecido (fintech
+        // nova, banco pequeno, o que vier a existir): só processa se o texto claramente fala de
+        // Pix — evita varrer notificação de qualquer app instalado, mas não exige cadastro prévio
+        // pra capturar um banco que ainda nem existia quando o app foi lançado.
+        val isKnownBank = container.rules().isKnownBank(pkg)
+        if (!isKnownBank && !looksLikePix(title, text)) return
+        if (!isKnownBank) Log.d(TAG, "$pkg: app desconhecido, mas parece Pix — tentando classificar")
 
         val incoming = NotificationIngestor.Incoming(
             packageName = pkg,
@@ -73,7 +92,14 @@ class BankNotificationListener : NotificationListenerService() {
         super.onDestroy()
     }
 
+    /** Palavra isolada "pix" (sem acento, minúscula) — evita falso positivo tipo "pixel"/"Pixar". */
+    private fun looksLikePix(title: String?, text: String?): Boolean {
+        val combined = TextNormalizer.normalize(listOfNotNull(title, text).joinToString(" "))
+        return PIX_WORD.containsMatchIn(combined)
+    }
+
     companion object {
         private const val TAG = "BankNotifListener"
+        private val PIX_WORD = Regex("\\bpix\\b")
     }
 }
