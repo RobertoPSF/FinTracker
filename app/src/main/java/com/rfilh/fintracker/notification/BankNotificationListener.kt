@@ -36,6 +36,11 @@ class BankNotificationListener : NotificationListenerService() {
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         val pkg = sbn.packageName ?: return
+        // Calculado cedo: usado tanto pra decidir se processa apps sem cadastro (mais abaixo)
+        // quanto pra decidir se dispara notificação de debug em cada ponto de anomalia — bancos
+        // já cadastrados deveriam SEMPRE virar transação, então qualquer desvio aqui é bug real.
+        val hasOverride = container.rules().hasOverride(pkg)
+
         if (sbn.notification.flags and Notification.FLAG_GROUP_SUMMARY != 0) {
             Log.d(TAG, "$pkg: ignorado (FLAG_GROUP_SUMMARY)")
             return
@@ -44,6 +49,7 @@ class BankNotificationListener : NotificationListenerService() {
         val extras = sbn.notification.extras
         if (extras == null) {
             Log.w(TAG, "$pkg: notificação sem extras")
+            if (hasOverride) DebugNotifier.noExtras(applicationContext, sbn)
             return
         }
         val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()
@@ -53,6 +59,7 @@ class BankNotificationListener : NotificationListenerService() {
                 ?.joinToString("\n") { it.toString() }
         if (title.isNullOrBlank() && text.isNullOrBlank()) {
             Log.w(TAG, "$pkg: sem título/texto extraível (extras: ${extras.keySet().joinToString()})")
+            if (hasOverride) DebugNotifier.noExtractableText(applicationContext, sbn, extras)
             return
         }
 
@@ -60,7 +67,6 @@ class BankNotificationListener : NotificationListenerService() {
         // (fintech nova, banco pequeno, o que vier a existir): só processa se o texto claramente
         // fala de Pix — evita varrer notificação de qualquer app instalado, mas não exige
         // cadastro prévio pra capturar um banco que ainda nem existia quando o app foi lançado.
-        val hasOverride = container.rules().hasOverride(pkg)
         if (!hasOverride && !looksLikePix(title, text)) return
 
         // Sem override, usa o nome de exibição do próprio Android em vez do package cru
@@ -80,6 +86,9 @@ class BankNotificationListener : NotificationListenerService() {
             runCatching { container.ingestor.ingest(incoming) }
                 .onSuccess { outcome ->
                     Log.d(TAG, "$pkg: ${outcome::class.simpleName}")
+                    if (hasOverride && outcome is NotificationIngestor.Outcome.Ignored) {
+                        DebugNotifier.ignoredByClassifier(applicationContext, pkg, title, text)
+                    }
                     if (outcome is NotificationIngestor.Outcome.Stored && outcome.type == TransactionType.EXPENSE) {
                         runCatching {
                             container.budgetAlertNotifier.checkAfterExpense(

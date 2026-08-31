@@ -2,6 +2,7 @@ package com.rfilh.fintracker
 
 import android.app.Application
 import com.rfilh.fintracker.notification.BudgetAlertNotifier
+import com.rfilh.fintracker.notification.DebugNotifier
 
 class FinTrackerApp : Application() {
 
@@ -12,5 +13,6 @@ class FinTrackerApp : Application() {
         super.onCreate()
         container = AppContainer(this)
         BudgetAlertNotifier.ensureChannel(this)
+        DebugNotifier.ensureChannel(this)
     }
 }
