@@ -19,10 +19,24 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        // Só usado no `assembleRelease`/`bundleRelease`. Sem essas variáveis de ambiente
+        // (setadas pelo workflow de release a partir de GitHub Secrets), fica com um
+        // storeFile inexistente — não quebra `assembleDebug`/`test`, só falha se alguém
+        // tentar gerar um release sem configurar a assinatura.
+        create("release") {
+            storeFile = file(System.getenv("KEYSTORE_PATH") ?: "missing-release-keystore.jks")
+            storePassword = System.getenv("KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("KEY_ALIAS")
+            keyPassword = System.getenv("KEY_PASSWORD")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
@@ -58,6 +72,7 @@ dependencies {
     implementation(libs.androidx.sqlite)
     implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.biometric)
+    implementation(libs.androidx.fragment.ktx)
 
     implementation(libs.kotlinx.coroutines)
     implementation(libs.kotlinx.serialization.json)
