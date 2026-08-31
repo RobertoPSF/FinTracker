@@ -13,7 +13,7 @@ App Android que lê notificações de bancos, classifica transações (entrada/s
 | 4 | Extrato por banco, balanço, revisão, edição | feito |
 | 5 | Empréstimo/cobrança (campos + tela "A cobrar") | feito |
 | 6 | Bloqueio biométrico | pendente (dependência já incluída) |
-| 7 | Export CSV (`data/repo/Exporter.kt`); import | parcial |
+| 7 | Export CSV (`data/repo/Exporter.kt`) + import OFX/CSV | parcial |
 | 8-9 | Categorias, gráficos, F-Droid | pendente |
 
 ## Estrutura
@@ -66,11 +66,33 @@ Adicionar um banco = adicionar entrada em `parser_rules.json` (`package`, `name`
 - Backup em nuvem desativado (`allowBackup=false` + `data_extraction_rules`).
 - `RawNotificationDao.purgeParsedContent()` apaga o conteúdo bruto mantendo o hash para dedup.
 
+## Bancos que não notificam
+
+Nubank e Mercado Pago não emitem notificação de Pix enviado. Três saídas, em ordem de esforço:
+
+1. **Ativar avisos no app do banco** (Nubank: Perfil > Notificações; Mercado Pago: Seu perfil > Notificações). Cobre parte dos casos.
+2. **Importar extrato** (tela "Importar"): OFX ou CSV exportado pelo app do banco. Dedup em duas camadas — hash da linha e cruzamento com transações já capturadas por notificação (mesmo banco, mesmo valor, ±12h).
+3. **Lançar manualmente** (botão "+ Lançar"), com data editável.
+
+Open Finance/agregadores (Pluggy, Belvo) resolveriam de forma automática, mas exigem cadastro de empresa e chaves — fora do escopo local-first.
+
+## Diagnóstico de captura
+
+Banco não aparece? Tela "Diagnóstico":
+
+1. Ligar "Capturar todos os apps" — passa a gravar notificação de qualquer app, sem classificar.
+2. Provocar uma notificação do banco.
+3. Conferir o pacote real e o texto extraído; copiar e adicionar/ajustar em `parser_rules.json`.
+4. Desligar o modo depois.
+
+Regras de banco aceitam `aliases` (outros pacotes) e `matchPrefix` (casa qualquer pacote com o mesmo prefixo — usado no Banco do Brasil).
+
 ## Limitações conhecidas
 
 - `NotificationListenerService` pode ser desvinculado pelo sistema; `NotificationAccess.rebind()` existe, mas convém orientar o usuário a isentar o app da otimização de bateria.
 - Notificação agrupada/resumo é descartada (`FLAG_GROUP_SUMMARY`).
 - Valores em notificações sem `R$` explícito não são extraídos.
+- Importação lê apenas texto (OFX/CSV). PDF de comprovante não é suportado.
 
 ## Licença
 
