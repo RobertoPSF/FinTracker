@@ -71,12 +71,12 @@
       "r\\$\\s?([0-9]+(?:\\.[0-9]{2})?)"
     ],
     "counterpartyPatterns": [
-      "(?:recebeu|recebido)\\s+(?:de|do|da)\\s+([^.,!;\\n]{2,40})",
-      "(?:enviado|enviou|transferiu|pagou|pagamento)\\s+(?:para|pra|ao|a)\\s+([^.,!;\\n]{2,40})",
-      "(?:para|pra)\\s+([^.,!;\\n]{2,40})",
+      "\\b(?:recebeu|recebido)\\s+\\b(?:de|do|da)\\s+([^.,!;\\n]{2,40})",
+      "\\b(?:enviado|enviou|transferiu|pagou|pagamento)\\s+\\b(?:para|pra|ao|a)\\s+([^.,!;\\n]{2,40})",
+      "\\b(?:para|pra)\\s+([^.,!;\\n]{2,40})",
       "\\bno\\s+([^.,!;\\n]{2,40})",
       "\\bem\\s+([^.,!;\\n]{2,40})",
-      "(?:de|do|da)\\s+([^.,!;\\n]{2,40})"
+      "\\b(?:de|do|da)\\s+([^.,!;\\n]{2,40})"
     ],
     "categories": [
       {
@@ -177,8 +177,8 @@
         "fatura"
       ],
       "counterpartyPatterns": [
-        "otimo!\\s+([^.,!;\\n]{2,40})",
-        "para\\s+([^.,!;\\n]{2,40})"
+        "\\botimo!\\s+([^.,!;\\n]{2,40})",
+        "\\bpara\\s+([^.,!;\\n]{2,40})"
       ]
     },
     {
