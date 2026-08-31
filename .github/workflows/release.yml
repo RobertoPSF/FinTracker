@@ -17,6 +17,8 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+      - name: Ensure gradlew is executable
+        run: chmod +x gradlew
       - name: Run unit tests
         run: ./gradlew testDebugUnitTest
 
@@ -30,6 +32,9 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+
+      - name: Ensure gradlew is executable
+        run: chmod +x gradlew
 
       - name: Decode release keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > "${{ github.workspace }}/release.keystore"
