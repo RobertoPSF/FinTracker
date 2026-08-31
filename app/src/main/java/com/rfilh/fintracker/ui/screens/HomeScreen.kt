@@ -160,7 +160,7 @@ fun HomeScreen(
                         .padding(horizontal = 14.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    AvatarBadge(BankPalette.colorFor(bank.bankPackage), BankPalette.initialFor(bank.bankName))
+                    AvatarBadge(BankPalette.colorFor(bank.bankPackage), BankPalette.initialFor(bank.bankName), packageName = bank.bankPackage)
                     Column(modifier = Modifier.weight(1f)) {
                         Text(bank.bankName, style = MaterialTheme.typography.bodyLarge)
                         Text(if (bank.count == 1) "1 transação" else "${bank.count} transações", style = MaterialTheme.typography.bodySmall)

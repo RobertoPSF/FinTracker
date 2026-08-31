@@ -6,6 +6,7 @@ import android.service.notification.StatusBarNotification
 import android.util.Log
 import com.rfilh.fintracker.FinTrackerApp
 import com.rfilh.fintracker.core.TextNormalizer
+import com.rfilh.fintracker.data.BankIconCache
 import com.rfilh.fintracker.domain.model.TransactionType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -82,6 +83,7 @@ class BankNotificationListener : NotificationListenerService() {
         )
 
         scope.launch {
+            BankIconCache.ensureCached(applicationContext, pkg)
             runCatching { container.ingestor.ingest(incoming) }
                 .onSuccess { outcome ->
                     Log.d(TAG, "$pkg: ${outcome::class.simpleName}")

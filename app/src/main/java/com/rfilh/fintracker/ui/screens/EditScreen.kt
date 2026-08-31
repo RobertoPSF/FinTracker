@@ -94,7 +94,7 @@ fun EditScreen(vm: EditViewModel, onDone: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    AvatarBadge(BankPalette.colorFor(t.bankPackage), BankPalette.initialFor(t.bankName), size = 26.dp, shape = RoundedCornerShape(8.dp))
+                    AvatarBadge(BankPalette.colorFor(t.bankPackage), BankPalette.initialFor(t.bankName), packageName = t.bankPackage, size = 26.dp, shape = RoundedCornerShape(8.dp))
                     Text(t.bankName, style = MaterialTheme.typography.bodySmall)
                 }
                 Text(

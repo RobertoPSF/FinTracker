@@ -9,9 +9,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import android.graphics.BitmapFactory
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -19,15 +22,20 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.rfilh.fintracker.core.Dates
 import com.rfilh.fintracker.core.Money
+import com.rfilh.fintracker.data.BankIconCache
 import com.rfilh.fintracker.domain.model.Confidence
 import com.rfilh.fintracker.domain.model.Transaction
 import com.rfilh.fintracker.domain.model.TransactionType
@@ -85,14 +93,34 @@ fun IconPillButton(icon: ImageVector, description: String, onClick: () -> Unit, 
     }
 }
 
-/** Quadrado colorido com a(s) inicial(is) do banco/pessoa. */
+/**
+ * Ícone real do app do banco quando já capturado (ver [BankIconCache]); cai pra quadrado
+ * colorido com a(s) inicial(is) do banco/pessoa enquanto não houver ícone em cache.
+ */
 @Composable
-fun AvatarBadge(color: Color, initial: String, size: Dp = 38.dp, shape: RoundedCornerShape = RoundedCornerShape(10.dp)) {
+fun AvatarBadge(
+    color: Color,
+    initial: String,
+    packageName: String? = null,
+    size: Dp = 38.dp,
+    shape: RoundedCornerShape = RoundedCornerShape(10.dp)
+) {
+    val context = LocalContext.current
+    val icon = remember(packageName) {
+        packageName
+            ?.let { BankIconCache.iconFile(context, it) }
+            ?.takeIf { it.exists() }
+            ?.let { runCatching { BitmapFactory.decodeFile(it.path)?.asImageBitmap() }.getOrNull() }
+    }
     Box(
-        modifier = Modifier.size(size).background(color, shape),
+        modifier = Modifier.size(size).clip(shape).background(if (icon != null) Color.Transparent else color),
         contentAlignment = Alignment.Center
     ) {
-        Text(initial, color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge.copy(color = Color.White))
+        if (icon != null) {
+            Image(icon, contentDescription = null, modifier = Modifier.fillMaxSize())
+        } else {
+            Text(initial, color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge.copy(color = Color.White))
+        }
     }
 }
 
@@ -133,7 +161,7 @@ fun TransactionRow(transaction: Transaction, onClick: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AvatarBadge(BankPalette.colorFor(transaction.bankPackage), BankPalette.initialFor(transaction.bankName))
+        AvatarBadge(BankPalette.colorFor(transaction.bankPackage), BankPalette.initialFor(transaction.bankName), packageName = transaction.bankPackage)
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
