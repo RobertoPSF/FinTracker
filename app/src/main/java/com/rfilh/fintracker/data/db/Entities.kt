@@ -52,7 +52,9 @@ data class TransactionEntity(
     val loanPerson: String? = null,
     val loanAmountCents: Long? = null,
     /** Registrado manualmente pelo usuário (ex. Pix enviado em banco que não notifica saída). */
-    val manual: Boolean = false
+    val manual: Boolean = false,
+    /** "Crédito" ou "Débito", quando a notificação de compra no cartão menciona a modalidade. */
+    val cardType: String? = null
 )
 
 @Entity(tableName = "category_budget")

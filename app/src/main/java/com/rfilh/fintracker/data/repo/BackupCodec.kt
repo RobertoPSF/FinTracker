@@ -31,7 +31,8 @@ object BackupCodec {
         val loanStatus: String,
         val loanPerson: String?,
         val loanAmountCents: Long?,
-        val manual: Boolean = false
+        val manual: Boolean = false,
+        val cardType: String? = null
     )
 
     @Serializable
@@ -58,7 +59,8 @@ object BackupCodec {
                 loanStatus = t.loanStatus.name,
                 loanPerson = t.loanPerson,
                 loanAmountCents = t.loanAmountCents,
-                manual = t.manual
+                manual = t.manual,
+                cardType = t.cardType
             )
         }
         return json.encodeToString(BackupFile.serializer(), BackupFile(exportedAt = exportedAt, transactions = dtos))
@@ -82,7 +84,8 @@ object BackupCodec {
                 loanStatus = runCatching { LoanStatus.valueOf(d.loanStatus) }.getOrDefault(LoanStatus.NONE),
                 loanPerson = d.loanPerson,
                 loanAmountCents = d.loanAmountCents,
-                manual = d.manual
+                manual = d.manual,
+                cardType = d.cardType
             )
         }
     }

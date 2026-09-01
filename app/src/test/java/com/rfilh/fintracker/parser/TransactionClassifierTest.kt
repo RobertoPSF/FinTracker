@@ -205,6 +205,37 @@ class TransactionClassifierTest {
     }
 
     @Test
+    fun `compra no cartao sem estabelecimento extrai modalidade em vez de contraparte lixo`() {
+        val r = parsed(
+            "com.mercadopago.wallet",
+            "Compra aprovada",
+            "Foi feita uma compra de R\$ 49,50 no seu Cartão Mercado Pago Crédito."
+        )
+        assertEquals(TransactionType.EXPENSE, r.type)
+        assertEquals(4950L, r.amountCents)
+        assertEquals("Crédito", r.cardType)
+        // "seu Cartão Mercado Pago Crédito" não é uma contraparte de verdade.
+        assertEquals(null, r.counterparty)
+    }
+
+    @Test
+    fun `modalidade do cartao reconhecida tambem na ordem invertida`() {
+        val r = parsed("com.c6bank.app", "C6", "Compra aprovada de R\$ 20,00 em débito no cartão")
+        assertEquals("Débito", r.cardType)
+    }
+
+    @Test
+    fun `contraparte nunca e a propria conta do usuario, mesmo com mais de uma palavra antes de conta`() {
+        val r = parsed(
+            "com.mercadopago.wallet",
+            "Pix recebido",
+            "Você recebeu um Pix de R\$ 0,01. O valor foi creditado para a sua conta."
+        )
+        assertEquals(TransactionType.INCOME, r.type)
+        assertEquals(null, r.counterparty)
+    }
+
+    @Test
     fun `parse de valores brl`() {
         assertEquals(123456L, Money.parseBrlToCents("1.234,56"))
         assertEquals(500L, Money.parseBrlToCents("R$ 5,00"))

@@ -8,7 +8,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [RawNotificationEntity::class, TransactionEntity::class, CategoryBudgetEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -37,6 +37,12 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
-        val MIGRATIONS: Array<Migration> = arrayOf(M1_2, M2_3)
+        private val M3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE transactions ADD COLUMN cardType TEXT")
+            }
+        }
+
+        val MIGRATIONS: Array<Migration> = arrayOf(M1_2, M2_3, M3_4)
     }
 }

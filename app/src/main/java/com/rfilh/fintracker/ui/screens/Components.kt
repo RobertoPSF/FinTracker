@@ -178,11 +178,17 @@ fun TransactionRow(transaction: Transaction, onClick: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Sem contraparte identificada (comum em compra no cartão sem nome de estabelecimento no
+        // texto), mas com a modalidade do cartão: "Cartão Mercado Pago - Crédito" é bem mais útil
+        // que repetir o nome do banco como se fosse o título da transação.
+        val cardFallbackTitle = transaction.cardType?.let { "Cartão ${transaction.bankName} - $it" }
+        val title = transaction.counterparty ?: cardFallbackTitle ?: transaction.bankName
+
         AvatarBadge(BankPalette.colorFor(transaction.bankPackage), BankPalette.initialFor(transaction.bankName), packageName = transaction.bankPackage)
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
-                    transaction.counterparty ?: transaction.bankName,
+                    title,
                     style = MaterialTheme.typography.bodyLarge,
                     maxLines = 1
                 )
@@ -201,7 +207,14 @@ fun TransactionRow(transaction: Transaction, onClick: () -> Unit) {
                     }
                 }
             }
-            val meta = listOfNotNull(transaction.bankName, Dates.dayLabel(transaction.occurredAt), transaction.category).joinToString(" · ")
+            // Banco já aparece no título quando ele veio do fallback "Cartão <banco> - <modalidade>"
+            // — evita repetir ("Cartão Mercado Pago - Crédito" / "Mercado Pago · 31/08").
+            val meta = listOfNotNull(
+                transaction.bankName.takeIf { transaction.counterparty != null || cardFallbackTitle == null },
+                Dates.dayLabel(transaction.occurredAt),
+                transaction.category,
+                transaction.cardType.takeIf { transaction.counterparty != null }
+            ).joinToString(" · ")
             Text(meta, style = MaterialTheme.typography.bodySmall, maxLines = 1)
         }
         Text("$sign ${Money.format(transaction.amountCents)}", color = amountColor, style = MaterialTheme.typography.bodyLarge.copy(color = amountColor))

@@ -14,6 +14,8 @@ sealed interface ParseResult {
         val counterparty: String?,
         val confidence: Confidence,
         val matchedKeyword: String?,
-        val category: String? = null
+        val category: String? = null,
+        /** "Crédito" ou "Débito" quando a notificação menciona a modalidade do cartão. */
+        val cardType: String? = null
     ) : ParseResult
 }

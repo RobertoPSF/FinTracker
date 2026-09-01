@@ -63,6 +63,7 @@ class TransactionClassifier(private val rules: ParserRules) {
 
         val counterparty = extractCounterparty(rawText, text, override)
         val category = extractCategory(text)
+        val cardType = extractCardType(text)
 
         val confidence = when {
             type != TransactionType.UNKNOWN && amount != null && override != null -> Confidence.HIGH
@@ -70,7 +71,18 @@ class TransactionClassifier(private val rules: ParserRules) {
             else -> Confidence.LOW
         }
 
-        return ParseResult.Parsed(displayName, type, amount, counterparty, confidence, matched, category)
+        return ParseResult.Parsed(displayName, type, amount, counterparty, confidence, matched, category, cardType)
+    }
+
+    /** "Crédito"/"Débito" quando o texto menciona a modalidade do cartão, em qualquer ordem
+     *  ("cartão ... crédito" ou "crédito no cartão") — vocabulário fixo, não depende de banco. */
+    private fun extractCardType(text: String): String? {
+        val match = CARD_TYPE_PATTERN.find(text) ?: CARD_TYPE_PATTERN_REVERSED.find(text)
+        return when (match?.groupValues?.getOrNull(1)) {
+            "credito" -> "Crédito"
+            "debito" -> "Débito"
+            else -> null
+        }
     }
 
     /** Primeira categoria cuja keyword aparece no texto vence (ordem do parser_rules.json). */
@@ -115,8 +127,11 @@ class TransactionClassifier(private val rules: ParserRules) {
             .trim(' ', '.', ',', ':', ';', '-')
         if (value.length < 2 || value.length > 40) return null
         if (value.all { it.isDigit() }) return null
-        // "para sua conta Corrente/Poupança" (a própria conta do usuário) não é contraparte.
-        if (Regex("^(sua |a )?conta\\b").containsMatchIn(value)) return null
+        // "(na/a/sua) conta Corrente/Poupança" (a própria conta do usuário) não é contraparte,
+        // não importa o que vem antes de "conta" — "na sua conta" é tão inválido quanto "conta".
+        if (value.contains(CONTA_WORD)) return null
+        // "seu Cartão Mercado Pago Crédito" (modalidade do pagamento, não quem recebeu/enviou).
+        if (value.contains(CARTAO_WORD)) return null
         return value
     }
 
@@ -131,5 +146,13 @@ class TransactionClassifier(private val rules: ParserRules) {
             if (TextNormalizer.normalize(cleanSlice) == normalizedName) return cleanSlice
         }
         return normalizedName
+    }
+
+    private companion object {
+        /** "cartão ... crédito" (ou vice-versa) — vocabulário fixo, não varia por banco. */
+        val CARD_TYPE_PATTERN = Regex("\\bcartao\\b.{0,40}?\\b(credito|debito)\\b")
+        val CARD_TYPE_PATTERN_REVERSED = Regex("\\b(credito|debito)\\b.{0,40}?\\bcartao\\b")
+        val CONTA_WORD = Regex("\\bconta\\b")
+        val CARTAO_WORD = Regex("\\bcartao\\b")
     }
 }

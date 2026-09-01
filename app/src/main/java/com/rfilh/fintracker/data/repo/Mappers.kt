@@ -30,7 +30,8 @@ fun TransactionEntity.toDomain() = Transaction(
     loanStatus = loanStatus,
     loanPerson = loanPerson,
     loanAmountCents = loanAmountCents,
-    manual = manual
+    manual = manual,
+    cardType = cardType
 )
 
 fun Transaction.toEntity() = TransactionEntity(
@@ -50,7 +51,8 @@ fun Transaction.toEntity() = TransactionEntity(
     loanStatus = loanStatus,
     loanPerson = loanPerson,
     loanAmountCents = loanAmountCents,
-    manual = manual
+    manual = manual,
+    cardType = cardType
 )
 
 fun BankSummaryRow.toDomain() = BankSummary(bankPackage, bankName, incomeCents, expenseCents, count)

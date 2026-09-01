@@ -95,7 +95,7 @@ fun EditScreen(vm: EditViewModel, onDone: () -> Unit) {
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     AvatarBadge(BankPalette.colorFor(t.bankPackage), BankPalette.initialFor(t.bankName), packageName = t.bankPackage, size = 26.dp, shape = RoundedCornerShape(8.dp))
-                    Text(t.bankName, style = MaterialTheme.typography.bodySmall)
+                    Text(listOfNotNull(t.bankName, t.cardType).joinToString(" · "), style = MaterialTheme.typography.bodySmall)
                 }
                 Text(
                     (if (signed >= 0) "+" else "-") + Money.format(abs(signed)),

@@ -93,7 +93,8 @@ class NotificationIngestor(
             confidence = if (result.amountCents == null) Confidence.LOW else result.confidence,
             reviewed = false,
             category = result.category,
-            rawId = rawId
+            rawId = rawId,
+            cardType = result.cardType
         )
         val id = transactionDao.insert(entity)
         rawDao.markParsed(rawId)
