@@ -74,7 +74,7 @@ fun ManualPixScreen(vm: ManualPixViewModel, onDone: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconPillButton(AppIcons.ChevronLeft, "Voltar", onDone)
-                Text("Registrar Pix enviado", style = MaterialTheme.typography.titleMedium)
+                Text("Registrar Pix", style = MaterialTheme.typography.titleMedium)
             }
 
             Text(

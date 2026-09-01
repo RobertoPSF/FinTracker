@@ -187,7 +187,7 @@ fun HomeScreen(
                         Row(modifier = Modifier.weight(1f)) { ShortcutCard(AppIcons.Grafico, "Gráfico", onClick = onOpenInsights) }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Row(modifier = Modifier.weight(1f)) { ShortcutCard(AppIcons.PixOut, "Registrar Pix enviado", onClick = onOpenManualPix) }
+                        Row(modifier = Modifier.weight(1f)) { ShortcutCard(AppIcons.PixOut, "Registrar Pix", onClick = onOpenManualPix) }
                     }
                 }
                 Text(
