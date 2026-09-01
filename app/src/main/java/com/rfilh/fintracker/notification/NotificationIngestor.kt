@@ -66,10 +66,11 @@ class NotificationIngestor(
         // Alguns bancos mandam duas notificações pro mesmo pagamento ("Pix enviado" e, segundos
         // depois, "Pix realizado com sucesso") — textos diferentes o bastante pra escapar do
         // dedup por hash. Sem isso, viraria transação duplicada.
-        if (result.type != TransactionType.UNKNOWN && (result.amountCents ?: 0L) > 0L) {
+        val amountCents = result.amountCents
+        if (result.type != TransactionType.UNKNOWN && amountCents != null && amountCents > 0L) {
             val similar = transactionDao.countSimilar(
                 bankPackage = incoming.packageName,
-                amountCents = result.amountCents!!,
+                amountCents = amountCents,
                 type = result.type,
                 from = incoming.postedAt - SIMILAR_WINDOW_MS,
                 to = incoming.postedAt + SIMILAR_WINDOW_MS

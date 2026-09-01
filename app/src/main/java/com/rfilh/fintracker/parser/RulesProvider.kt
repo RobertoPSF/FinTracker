@@ -1,6 +1,7 @@
 package com.rfilh.fintracker.parser
 
 import android.content.Context
+import android.util.Log
 import java.io.File
 
 /**
@@ -26,7 +27,13 @@ object RulesProvider {
         val raw = runCatching {
             if (override.exists()) override.readText()
             else context.assets.open(ASSET).bufferedReader().use { it.readText() }
-        }.getOrNull() ?: return ParserRules()
-        return runCatching { ParserRules.fromJson(raw) }.getOrElse { ParserRules() }
+        }.onFailure { Log.e(TAG, "falha ao ler $ASSET/$OVERRIDE, capturando sem regras", it) }
+            .getOrNull() ?: return ParserRules()
+
+        return runCatching { ParserRules.fromJson(raw) }
+            .onFailure { Log.e(TAG, "$ASSET/$OVERRIDE malformado, capturando sem regras", it) }
+            .getOrElse { ParserRules() }
     }
+
+    private const val TAG = "RulesProvider"
 }

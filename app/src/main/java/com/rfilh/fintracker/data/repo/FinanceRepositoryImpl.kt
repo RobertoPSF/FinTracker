@@ -2,6 +2,7 @@ package com.rfilh.fintracker.data.repo
 
 import com.rfilh.fintracker.core.Anonymizer
 import com.rfilh.fintracker.core.Dates
+import com.rfilh.fintracker.core.TextNormalizer
 import com.rfilh.fintracker.data.db.CategoryBudgetDao
 import com.rfilh.fintracker.data.db.CategoryBudgetEntity
 import com.rfilh.fintracker.data.db.RawNotificationDao
@@ -39,8 +40,18 @@ class FinanceRepositoryImpl(
     override fun transactionsByBank(yearMonth: String, bankPackage: String): Flow<List<Transaction>> =
         transactionDao.observeByMonthAndBank(yearMonth, bankPackage).map { list -> list.map { it.toDomain() } }
 
-    override fun searchTransactions(query: String): Flow<List<Transaction>> =
-        transactionDao.observeSearch(query).map { list -> list.map { it.toDomain() } }
+    /** Busca por contraparte/banco ignorando acento e maiúsculas — o `LIKE` do SQLite só
+     *  ignora maiúsculas, então a comparação real é feita aqui em Kotlin (ver [TextNormalizer]),
+     *  não no banco. */
+    override fun searchTransactions(query: String): Flow<List<Transaction>> {
+        val normalizedQuery = TextNormalizer.normalize(query)
+        return transactionDao.observeAll().map { list ->
+            list.filter { entity ->
+                TextNormalizer.normalize(entity.counterparty.orEmpty()).contains(normalizedQuery) ||
+                    TextNormalizer.normalize(entity.bankName).contains(normalizedQuery)
+            }.map { it.toDomain() }
+        }
+    }
 
     override fun reviewQueue(): Flow<List<Transaction>> =
         transactionDao.observeReviewQueue().map { list -> list.map { it.toDomain() } }

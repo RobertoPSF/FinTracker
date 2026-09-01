@@ -19,7 +19,7 @@ object RecurrenceDetector {
 
     fun detect(transactions: List<Transaction>): List<RecurringItem> {
         val expenses = transactions.filter { it.type == TransactionType.EXPENSE && !it.counterparty.isNullOrBlank() }
-        val byCounterparty = expenses.groupBy { TextNormalizer.normalize(it.counterparty!!) }
+        val byCounterparty = expenses.groupBy { TextNormalizer.normalize(it.counterparty.orEmpty()) }
 
         return byCounterparty.mapNotNull { (_, group) ->
             val clusters = clusterByAmount(group)
@@ -27,7 +27,7 @@ object RecurrenceDetector {
                 .maxByOrNull { it.size }
                 ?.let { cluster ->
                     RecurringItem(
-                        counterparty = cluster.first().counterparty!!,
+                        counterparty = cluster.first().counterparty.orEmpty(),
                         avgAmountCents = cluster.map { it.amountCents }.average().toLong(),
                         monthsSeen = cluster.map { it.yearMonth }.distinct().sorted()
                     )

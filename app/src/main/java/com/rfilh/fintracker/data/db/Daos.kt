@@ -164,13 +164,10 @@ interface TransactionDao {
     )
     suspend fun countSimilar(bankPackage: String, amountCents: Long, type: TransactionType, from: Long, to: Long): Int
 
-    /** Busca por pessoa/instituição em todos os meses — visão de auditoria (ex. MEI conferindo
-     *  todo o histórico com um cliente/fornecedor específico), não fica presa ao mês corrente. */
-    @Query(
-        "SELECT * FROM transactions " +
-            "WHERE counterparty LIKE '%' || :query || '%' COLLATE NOCASE " +
-            "OR bankName LIKE '%' || :query || '%' COLLATE NOCASE " +
-            "ORDER BY occurredAt DESC"
-    )
-    fun observeSearch(query: String): Flow<List<TransactionEntity>>
+    /** Todas as transações, sem filtro de mês — base pra busca por pessoa/instituição (visão de
+     *  auditoria). A comparação em si é feita em Kotlin (ver [com.rfilh.fintracker.core.TextNormalizer]):
+     *  o `LIKE ... COLLATE NOCASE` do SQLite ignora maiúsculas mas não acentos, então "joao" não
+     *  encontraria "João" — teria que ser feito assim mesmo com uma coluna normalizada à parte. */
+    @Query("SELECT * FROM transactions ORDER BY occurredAt DESC")
+    fun observeAll(): Flow<List<TransactionEntity>>
 }
