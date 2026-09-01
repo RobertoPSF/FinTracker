@@ -1,5 +1,7 @@
 package com.rfilh.fintracker.ui.screens
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,6 +31,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rfilh.fintracker.core.Money
+import com.rfilh.fintracker.data.db.AppSettings
 import com.rfilh.fintracker.notification.NotificationAccess
 import com.rfilh.fintracker.ui.theme.ActionNavy
 import com.rfilh.fintracker.ui.theme.AppIcons
@@ -62,6 +65,7 @@ fun HomeScreen(
     val reviewCount by vm.reviewCount.collectAsStateWithLifecycle()
 
     var accessGranted by remember { mutableStateOf(NotificationAccess.isEnabled(context)) }
+    var devNoticeDismissed by remember { mutableStateOf(AppSettings.devNoticeDismissed(context)) }
 
     Scaffold(containerColor = colors.bg) { padding ->
         LazyColumn(modifier = Modifier.padding(padding).padding(horizontal = 20.dp)) {
@@ -96,6 +100,47 @@ fun HomeScreen(
                                 colors = ButtonDefaults.textButtonColors(containerColor = ActionNavy, contentColor = Color.White)
                             ) { Text("Conceder permissão") }
                             TextButton(onClick = { accessGranted = NotificationAccess.isEnabled(context) }) { Text("Já concedi") }
+                        }
+                    }
+                    Spacer(Modifier.size(16.dp))
+                }
+            }
+
+            if (!devNoticeDismissed) {
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(WarningBg, RoundedCornerShape(14.dp))
+                            .border(1.dp, WarningBorder, RoundedCornerShape(14.dp))
+                            .padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text("O app está em desenvolvimento", style = MaterialTheme.typography.bodyLarge.copy(color = WarningText))
+                        Text(
+                            "Estamos sempre melhorando a captura automática de lançamentos. Hoje já funcionam bem: " +
+                                "compra no cartão e Pix recebido. O registro de Pix enviado ainda é algo a ser " +
+                                "resolvido para se tornar automático.",
+                            style = MaterialTheme.typography.bodySmall.copy(color = WarningText)
+                        )
+                        Text(
+                            "Usa um banco ou fintech que não está sendo registrado? Me avisa: robertofilho875@gmail.com",
+                            style = MaterialTheme.typography.bodySmall.copy(color = WarningText)
+                        )
+                        Row {
+                            TextButton(
+                                onClick = {
+                                    val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:robertofilho875@gmail.com")).apply {
+                                        putExtra(Intent.EXTRA_SUBJECT, "FinTracker - banco nao registrado")
+                                    }
+                                    runCatching { context.startActivity(intent) }
+                                },
+                                colors = ButtonDefaults.textButtonColors(containerColor = ActionNavy, contentColor = Color.White)
+                            ) { Text("Enviar e-mail") }
+                            TextButton(onClick = {
+                                devNoticeDismissed = true
+                                AppSettings.setDevNoticeDismissed(context, true)
+                            }) { Text("Entendi") }
                         }
                     }
                     Spacer(Modifier.size(16.dp))
