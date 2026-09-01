@@ -229,11 +229,6 @@ fun EditScreen(vm: EditViewModel, onDone: () -> Unit) {
 }
 
 @Composable
-private fun FieldLabel(text: String) {
-    Text(text, style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.appColors.muted), modifier = Modifier.padding(bottom = 6.dp))
-}
-
-@Composable
 private fun TypeOption(label: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.appColors
     Row(

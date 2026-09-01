@@ -13,6 +13,7 @@ import com.rfilh.fintracker.AppContainer
 import com.rfilh.fintracker.ui.screens.EditScreen
 import com.rfilh.fintracker.ui.screens.HomeScreen
 import com.rfilh.fintracker.ui.screens.InsightsScreen
+import com.rfilh.fintracker.ui.screens.ManualPixScreen
 import com.rfilh.fintracker.ui.screens.ReceivablesScreen
 import com.rfilh.fintracker.ui.screens.ReviewScreen
 import com.rfilh.fintracker.ui.screens.SettingsScreen
@@ -20,6 +21,7 @@ import com.rfilh.fintracker.ui.screens.StatementScreen
 import com.rfilh.fintracker.ui.vm.EditViewModel
 import com.rfilh.fintracker.ui.vm.HomeViewModel
 import com.rfilh.fintracker.ui.vm.InsightsViewModel
+import com.rfilh.fintracker.ui.vm.ManualPixViewModel
 import com.rfilh.fintracker.ui.vm.ReceivablesViewModel
 import com.rfilh.fintracker.ui.vm.ReviewViewModel
 import com.rfilh.fintracker.ui.vm.SettingsViewModel
@@ -33,6 +35,7 @@ object Routes {
     const val RECEIVABLES = "receivables"
     const val INSIGHTS = "insights"
     const val SETTINGS = "settings"
+    const val MANUAL_PIX = "manual_pix"
 
     fun statement(bankPackage: String) = "$STATEMENT?bank=$bankPackage"
     fun edit(id: Long) = "$EDIT/$id"
@@ -55,8 +58,16 @@ fun FinTrackerNavHost(container: AppContainer) {
                 onOpenReview = { navController.navigate(Routes.REVIEW) },
                 onOpenReceivables = { navController.navigate(Routes.RECEIVABLES) },
                 onOpenInsights = { navController.navigate(Routes.INSIGHTS) },
-                onOpenSettings = { navController.navigate(Routes.SETTINGS) }
+                onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                onOpenManualPix = { navController.navigate(Routes.MANUAL_PIX) }
             )
+        }
+
+        composable(Routes.MANUAL_PIX) {
+            val vm: ManualPixViewModel = viewModel(
+                factory = viewModelFactory { initializer { ManualPixViewModel(container.repository, container) } }
+            )
+            ManualPixScreen(vm = vm, onDone = { navController.popBackStack() })
         }
 
         composable(

@@ -22,7 +22,8 @@ data class Transaction(
     val rawId: Long? = null,
     val loanStatus: LoanStatus = LoanStatus.NONE,
     val loanPerson: String? = null,
-    val loanAmountCents: Long? = null
+    val loanAmountCents: Long? = null,
+    val manual: Boolean = false
 )
 
 data class MonthBalance(

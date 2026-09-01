@@ -29,7 +29,8 @@ fun TransactionEntity.toDomain() = Transaction(
     rawId = rawId,
     loanStatus = loanStatus,
     loanPerson = loanPerson,
-    loanAmountCents = loanAmountCents
+    loanAmountCents = loanAmountCents,
+    manual = manual
 )
 
 fun Transaction.toEntity() = TransactionEntity(
@@ -48,7 +49,8 @@ fun Transaction.toEntity() = TransactionEntity(
     rawId = rawId,
     loanStatus = loanStatus,
     loanPerson = loanPerson,
-    loanAmountCents = loanAmountCents
+    loanAmountCents = loanAmountCents,
+    manual = manual
 )
 
 fun BankSummaryRow.toDomain() = BankSummary(bankPackage, bankName, incomeCents, expenseCents, count)

@@ -100,6 +100,9 @@ object AppIcons {
 
     val Grafico: ImageVector by lazy { singleStroke("Grafico", 24f, 24f, 2f, "M 5 20 L 5 13 M 12 20 L 12 6 M 19 20 L 19 10") }
 
+    /** Seta de envio (só linhas retas, mesmo padrão seguro do Chevron/Grafico). */
+    val PixOut: ImageVector by lazy { singleStroke("PixOut", 24f, 24f, 2f, "M 5 19 L 19 5 M 11 5 L 19 5 L 19 13") }
+
     val Trash: ImageVector by lazy {
         singleStroke("Trash", 24f, 24f, 1.6f, "M 5 7 L 19 7 M 9 7 L 9 4 L 15 4 L 15 7 M 6 7 L 7 20 L 17 20 L 18 7")
     }

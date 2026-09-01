@@ -13,6 +13,7 @@ interface FinanceRepository {
     fun bankSummaries(yearMonth: String): Flow<List<BankSummary>>
     fun transactions(yearMonth: String): Flow<List<Transaction>>
     fun transactionsByBank(yearMonth: String, bankPackage: String): Flow<List<Transaction>>
+    fun searchTransactions(query: String): Flow<List<Transaction>>
     fun reviewQueue(): Flow<List<Transaction>>
     fun reviewCount(): Flow<Int>
     fun receivables(): Flow<List<PersonBalance>>

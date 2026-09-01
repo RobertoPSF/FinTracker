@@ -50,7 +50,9 @@ data class TransactionEntity(
     val rawId: Long? = null,
     val loanStatus: LoanStatus = LoanStatus.NONE,
     val loanPerson: String? = null,
-    val loanAmountCents: Long? = null
+    val loanAmountCents: Long? = null,
+    /** Registrado manualmente pelo usuário (ex. Pix enviado em banco que não notifica saída). */
+    val manual: Boolean = false
 )
 
 @Entity(tableName = "category_budget")

@@ -176,12 +176,25 @@ fun TransactionRow(transaction: Transaction, onClick: () -> Unit) {
                         Text("REVISAR", color = ReviewChipText, style = MaterialTheme.typography.labelSmall.copy(color = ReviewChipText))
                     }
                 }
+                if (transaction.manual) {
+                    Box(
+                        modifier = Modifier.background(colors.border, RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text("MANUAL", color = colors.muted, style = MaterialTheme.typography.labelSmall.copy(color = colors.muted))
+                    }
+                }
             }
             val meta = listOfNotNull(transaction.bankName, Dates.dayLabel(transaction.occurredAt), transaction.category).joinToString(" · ")
             Text(meta, style = MaterialTheme.typography.bodySmall, maxLines = 1)
         }
         Text("$sign ${Money.format(transaction.amountCents)}", color = amountColor, style = MaterialTheme.typography.bodyLarge.copy(color = amountColor))
     }
+}
+
+/** Rótulo pequeno acima de um campo de formulário (Editar, Registrar Pix enviado). */
+@Composable
+fun FieldLabel(text: String) {
+    Text(text, style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.appColors.muted), modifier = Modifier.padding(bottom = 6.dp))
 }
 
 /** Botão do grid 2x2 de atalhos da Home (ícone + rótulo, com badge opcional). */

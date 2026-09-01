@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -59,18 +60,31 @@ class StatementViewModel(
     private val _month = MutableStateFlow(Dates.currentYearMonth())
     val month: StateFlow<String> = _month.asStateFlow()
 
-    val transactions: StateFlow<List<Transaction>> = _month
-        .flatMapLatest { ym ->
-            if (bankPackage.isNullOrBlank()) repo.transactions(ym)
-            else repo.transactionsByBank(ym, bankPackage)
+    private val _query = MutableStateFlow("")
+    val query: StateFlow<String> = _query.asStateFlow()
+
+    /** Busca por pessoa/instituição ignora o mês selecionado — visão de auditoria, não fica
+     *  presa ao mês corrente (útil pra conferir todo o histórico com um cliente/fornecedor). */
+    val transactions: StateFlow<List<Transaction>> = combine(_month, _query) { ym, q -> ym to q }
+        .flatMapLatest { (ym, q) ->
+            when {
+                q.isNotBlank() -> repo.searchTransactions(q)
+                bankPackage.isNullOrBlank() -> repo.transactions(ym)
+                else -> repo.transactionsByBank(ym, bankPackage)
+            }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    val title: StateFlow<String> = transactions
-        .map { list -> if (bankPackage.isNullOrBlank()) "Extrato geral" else list.firstOrNull()?.bankName ?: "Extrato" }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), if (bankPackage.isNullOrBlank()) "Extrato geral" else "Extrato")
+    val title: StateFlow<String> = combine(transactions, _query) { list, q ->
+        when {
+            q.isNotBlank() -> "Busca: \"$q\""
+            bankPackage.isNullOrBlank() -> "Extrato geral"
+            else -> list.firstOrNull()?.bankName ?: "Extrato"
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), if (bankPackage.isNullOrBlank()) "Extrato geral" else "Extrato")
 
     fun shiftMonth(delta: Int) { _month.value = Dates.shift(_month.value, delta) }
+    fun setQuery(q: String) { _query.value = q }
 }
 
 class ReviewViewModel(private val repo: FinanceRepository) : ViewModel() {
@@ -116,6 +130,61 @@ class EditViewModel(private val repo: FinanceRepository, container: AppContainer
         repo.delete(id)
         ToastBus.show("Lançamento excluído")
         onDone()
+    }
+}
+
+/**
+ * Registro manual de Pix enviado — pra bancos/fintechs que não notificam saída de Pix
+ * (ex. Mercado Pago, Nubank em certos casos), o usuário informa valor, banco de origem e
+ * destinatário direto, sem depender da captura automática.
+ */
+class ManualPixViewModel(private val repo: FinanceRepository, container: AppContainer) : ViewModel() {
+
+    /** Bancos já cadastrados em parser_rules.json — permite reaproveitar o mesmo bankPackage
+     *  de um banco que já captura outras transações (ícone e agrupamento ficam corretos). */
+    val bankOptions: List<Pair<String, String>> =
+        container.rules().overrides.map { it.`package` to it.name }.sortedBy { it.second }
+
+    private val _state = MutableStateFlow(
+        Transaction(
+            bankPackage = "",
+            bankName = "",
+            type = TransactionType.EXPENSE,
+            amountCents = 0,
+            counterparty = null,
+            occurredAt = System.currentTimeMillis(),
+            yearMonth = Dates.currentYearMonth(),
+            confidence = Confidence.HIGH,
+            reviewed = true,
+            manual = true
+        )
+    )
+    val state: StateFlow<Transaction> = _state.asStateFlow()
+
+    fun update(block: (Transaction) -> Transaction) { _state.value = block(_state.value) }
+
+    fun setOccurredAt(epochMillis: Long) {
+        _state.value = _state.value.copy(occurredAt = epochMillis, yearMonth = Dates.yearMonth(epochMillis))
+    }
+
+    fun save(onDone: () -> Unit) {
+        val t = _state.value
+        if (t.amountCents <= 0 || t.bankName.isBlank() || t.counterparty.isNullOrBlank()) {
+            ToastBus.show("Preencha valor, banco e destinatário")
+            return
+        }
+        viewModelScope.launch {
+            repo.save(t)
+            ToastBus.show("Pix enviado registrado")
+            onDone()
+        }
+    }
+
+    companion object {
+        /** bankPackage sintético e estável pra bancos digitados livremente (fora da lista
+         *  conhecida) — mesmo nome sempre gera o mesmo id, então agrupa corretamente na Home. */
+        fun manualPackageFor(bankName: String): String =
+            "manual:" + bankName.trim().lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-')
     }
 }
 

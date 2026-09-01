@@ -163,4 +163,14 @@ interface TransactionDao {
             "AND occurredAt BETWEEN :from AND :to"
     )
     suspend fun countSimilar(bankPackage: String, amountCents: Long, type: TransactionType, from: Long, to: Long): Int
+
+    /** Busca por pessoa/instituição em todos os meses — visão de auditoria (ex. MEI conferindo
+     *  todo o histórico com um cliente/fornecedor específico), não fica presa ao mês corrente. */
+    @Query(
+        "SELECT * FROM transactions " +
+            "WHERE counterparty LIKE '%' || :query || '%' COLLATE NOCASE " +
+            "OR bankName LIKE '%' || :query || '%' COLLATE NOCASE " +
+            "ORDER BY occurredAt DESC"
+    )
+    fun observeSearch(query: String): Flow<List<TransactionEntity>>
 }

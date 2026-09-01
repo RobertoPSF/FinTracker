@@ -55,7 +55,8 @@ fun HomeScreen(
     onOpenReview: () -> Unit,
     onOpenReceivables: () -> Unit,
     onOpenInsights: () -> Unit,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    onOpenManualPix: () -> Unit
 ) {
     val colors = MaterialTheme.appColors
     val context = LocalContext.current
@@ -184,6 +185,9 @@ fun HomeScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Row(modifier = Modifier.weight(1f)) { ShortcutCard(AppIcons.Cobrar, "A cobrar", onClick = onOpenReceivables) }
                         Row(modifier = Modifier.weight(1f)) { ShortcutCard(AppIcons.Grafico, "Gráfico", onClick = onOpenInsights) }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(modifier = Modifier.weight(1f)) { ShortcutCard(AppIcons.PixOut, "Registrar Pix enviado", onClick = onOpenManualPix) }
                     }
                 }
                 Text(

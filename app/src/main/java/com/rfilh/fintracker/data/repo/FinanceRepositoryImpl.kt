@@ -39,6 +39,9 @@ class FinanceRepositoryImpl(
     override fun transactionsByBank(yearMonth: String, bankPackage: String): Flow<List<Transaction>> =
         transactionDao.observeByMonthAndBank(yearMonth, bankPackage).map { list -> list.map { it.toDomain() } }
 
+    override fun searchTransactions(query: String): Flow<List<Transaction>> =
+        transactionDao.observeSearch(query).map { list -> list.map { it.toDomain() } }
+
     override fun reviewQueue(): Flow<List<Transaction>> =
         transactionDao.observeReviewQueue().map { list -> list.map { it.toDomain() } }
 

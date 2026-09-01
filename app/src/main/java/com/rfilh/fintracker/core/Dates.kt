@@ -28,6 +28,16 @@ object Dates {
         return "${names[m - 1]}/${yearMonth.substring(0, 4)}"
     }
 
+    /** epochMillis -> "31/08/2026", sem hora — usado onde não há horário real (ex. lançamento manual). */
+    fun dateLabel(epochMillis: Long): String {
+        val c = Calendar.getInstance(TimeZone.getDefault())
+        c.timeInMillis = epochMillis
+        return String.format(
+            Locale.US, "%02d/%02d/%04d",
+            c.get(Calendar.DAY_OF_MONTH), c.get(Calendar.MONTH) + 1, c.get(Calendar.YEAR)
+        )
+    }
+
     fun dayLabel(epochMillis: Long): String {
         val c = Calendar.getInstance(TimeZone.getDefault())
         c.timeInMillis = epochMillis
