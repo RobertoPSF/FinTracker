@@ -48,6 +48,8 @@ import com.rfilh.fintracker.ui.theme.appColors
 import com.rfilh.fintracker.ui.vm.HomeViewModel
 import kotlin.math.abs
 
+private const val SUPPORT_EMAIL = "robertofilho875@gmail.com"
+
 @Composable
 fun HomeScreen(
     vm: HomeViewModel,
@@ -130,13 +132,13 @@ fun HomeScreen(
                             style = MaterialTheme.typography.bodySmall.copy(color = WarningText)
                         )
                         Text(
-                            "Usa um banco ou fintech que não está sendo registrado? Me avisa: robertofilho875@gmail.com",
+                            "Usa um banco ou fintech que não está sendo registrado? Me avisa: $SUPPORT_EMAIL",
                             style = MaterialTheme.typography.bodySmall.copy(color = WarningText)
                         )
                         Row {
                             TextButton(
                                 onClick = {
-                                    val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:robertofilho875@gmail.com")).apply {
+                                    val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:$SUPPORT_EMAIL")).apply {
                                         putExtra(Intent.EXTRA_SUBJECT, "FinTracker - banco nao registrado")
                                     }
                                     runCatching { context.startActivity(intent) }
@@ -185,7 +187,7 @@ fun HomeScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(bottom = 16.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Row(modifier = Modifier.weight(1f)) { ShortcutCard(AppIcons.Extrato, "Extrato geral", onClick = onOpenAll) }
-                        Row(modifier = Modifier.weight(1f)) { ShortcutCard(AppIcons.PixOut, "Registrar Pix", onClick = onOpenManualPix) }
+                        Row(modifier = Modifier.weight(1f)) { ShortcutCard(AppIcons.Plus, "Registrar Pix", onClick = onOpenManualPix) }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Row(modifier = Modifier.weight(1f)) { ShortcutCard(AppIcons.Cobrar, "A cobrar", onClick = onOpenReceivables) }

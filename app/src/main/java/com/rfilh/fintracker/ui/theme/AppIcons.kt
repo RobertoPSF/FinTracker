@@ -79,17 +79,6 @@ object AppIcons {
             }.build()
     }
 
-    val Fila: ImageVector by lazy {
-        ImageVector.Builder(name = "Fila", defaultWidth = 20.dp, defaultHeight = 20.dp, viewportWidth = 24f, viewportHeight = 24f)
-            .apply {
-                strokePath(
-                    "M 7 4 L 17 4 A 3 3 0 0 1 20 7 L 20 17 A 3 3 0 0 1 17 20 L 7 20 A 3 3 0 0 1 4 17 L 4 7 A 3 3 0 0 1 7 4 Z",
-                    strokeWidth = 1.6f
-                )
-                strokePath("M 8 12 L 10.5 14.5 L 16 9", strokeWidth = 1.6f)
-            }.build()
-    }
-
     val Cobrar: ImageVector by lazy {
         ImageVector.Builder(name = "Cobrar", defaultWidth = 20.dp, defaultHeight = 20.dp, viewportWidth = 24f, viewportHeight = 24f)
             .apply {
@@ -100,8 +89,7 @@ object AppIcons {
 
     val Grafico: ImageVector by lazy { singleStroke("Grafico", 24f, 24f, 2f, "M 5 20 L 5 13 M 12 20 L 12 6 M 19 20 L 19 10") }
 
-    /** Seta de envio (só linhas retas, mesmo padrão seguro do Chevron/Grafico). */
-    val PixOut: ImageVector by lazy { singleStroke("PixOut", 24f, 24f, 2f, "M 5 19 L 19 5 M 11 5 L 19 5 L 19 13") }
+    val Plus: ImageVector by lazy { singleStroke("Plus", 24f, 24f, 2f, "M 12 5 L 12 19 M 5 12 L 19 12") }
 
     val Bell: ImageVector by lazy {
         ImageVector.Builder(name = "Bell", defaultWidth = 20.dp, defaultHeight = 20.dp, viewportWidth = 24f, viewportHeight = 24f)
