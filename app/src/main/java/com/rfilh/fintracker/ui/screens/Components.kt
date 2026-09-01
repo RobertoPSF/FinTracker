@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import android.graphics.BitmapFactory
@@ -79,7 +80,7 @@ private fun IconGhostButton(icon: ImageVector, description: String, onClick: () 
 
 /** Botão circular com fundo e borda — voltar, configurações, ações do topo das telas. */
 @Composable
-fun IconPillButton(icon: ImageVector, description: String, onClick: () -> Unit, size: Dp = 36.dp) {
+fun IconPillButton(icon: ImageVector, description: String, onClick: () -> Unit, size: Dp = 36.dp, badgeCount: Int = 0) {
     val colors = MaterialTheme.appColors
     Box(
         modifier = Modifier
@@ -90,6 +91,22 @@ fun IconPillButton(icon: ImageVector, description: String, onClick: () -> Unit, 
         contentAlignment = Alignment.Center
     ) {
         Icon(icon, description, tint = MaterialTheme.appColors.primary, modifier = Modifier.size(size * 0.42f))
+        if (badgeCount > 0) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 4.dp, y = (-4).dp)
+                    .background(ReviewBadgeBg, RoundedCornerShape(10.dp))
+                    .padding(horizontal = 5.dp, vertical = 2.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    badgeCount.toString(),
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelSmall.copy(color = Color.White, fontWeight = FontWeight.Bold)
+                )
+            }
+        }
     }
 }
 

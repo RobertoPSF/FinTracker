@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -73,10 +74,14 @@ fun HomeScreen(
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 18.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text("FinTracker", style = MaterialTheme.typography.titleLarge)
-                    IconPillButton(AppIcons.Settings, "Configurações", onOpenSettings, size = 38.dp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        IconPillButton(AppIcons.Bell, "Fila de revisão", onOpenReview, size = 38.dp, badgeCount = reviewCount)
+                        IconPillButton(AppIcons.Settings, "Configurações", onOpenSettings, size = 38.dp)
+                    }
                 }
             }
 
@@ -180,14 +185,11 @@ fun HomeScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(bottom = 16.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Row(modifier = Modifier.weight(1f)) { ShortcutCard(AppIcons.Extrato, "Extrato geral", onClick = onOpenAll) }
-                        Row(modifier = Modifier.weight(1f)) { ShortcutCard(AppIcons.Fila, "Fila de revisão", badgeCount = reviewCount, onClick = onOpenReview) }
+                        Row(modifier = Modifier.weight(1f)) { ShortcutCard(AppIcons.PixOut, "Registrar Pix", onClick = onOpenManualPix) }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Row(modifier = Modifier.weight(1f)) { ShortcutCard(AppIcons.Cobrar, "A cobrar", onClick = onOpenReceivables) }
                         Row(modifier = Modifier.weight(1f)) { ShortcutCard(AppIcons.Grafico, "Gráfico", onClick = onOpenInsights) }
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Row(modifier = Modifier.weight(1f)) { ShortcutCard(AppIcons.PixOut, "Registrar Pix", onClick = onOpenManualPix) }
                     }
                 }
                 Text(

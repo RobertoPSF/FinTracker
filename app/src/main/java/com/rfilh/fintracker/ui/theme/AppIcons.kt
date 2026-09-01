@@ -103,6 +103,17 @@ object AppIcons {
     /** Seta de envio (só linhas retas, mesmo padrão seguro do Chevron/Grafico). */
     val PixOut: ImageVector by lazy { singleStroke("PixOut", 24f, 24f, 2f, "M 5 19 L 19 5 M 11 5 L 19 5 L 19 13") }
 
+    val Bell: ImageVector by lazy {
+        ImageVector.Builder(name = "Bell", defaultWidth = 20.dp, defaultHeight = 20.dp, viewportWidth = 24f, viewportHeight = 24f)
+            .apply {
+                strokePath(
+                    "M 18 8 A 6 6 0 0 0 6 8 C 6 15 3 17 3 17 L 21 17 C 21 17 18 15 18 8 Z",
+                    strokeWidth = 1.6f
+                )
+                strokePath("M 13.73 21 A 2 2 0 0 1 10.27 21", strokeWidth = 1.6f)
+            }.build()
+    }
+
     val Trash: ImageVector by lazy {
         singleStroke("Trash", 24f, 24f, 1.6f, "M 5 7 L 19 7 M 9 7 L 9 4 L 15 4 L 15 7 M 6 7 L 7 20 L 17 20 L 18 7")
     }
