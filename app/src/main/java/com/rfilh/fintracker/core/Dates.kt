@@ -38,6 +38,28 @@ object Dates {
         )
     }
 
+    /** Dia do mês (1..31) no fuso local. */
+    fun dayOfMonth(epochMillis: Long): Int {
+        val c = Calendar.getInstance(TimeZone.getDefault())
+        c.timeInMillis = epochMillis
+        return c.get(Calendar.DAY_OF_MONTH)
+    }
+
+    /** "05/09" — dia/mês curtos, para agenda de contas previstas. */
+    fun shortDayMonth(epochMillis: Long): String {
+        val c = Calendar.getInstance(TimeZone.getDefault())
+        c.timeInMillis = epochMillis
+        return String.format(Locale.US, "%02d/%02d", c.get(Calendar.DAY_OF_MONTH), c.get(Calendar.MONTH) + 1)
+    }
+
+    /** Nome curto do mês em pt-BR ("set") a partir de epochMillis. */
+    fun monthShort(epochMillis: Long): String {
+        val names = listOf("jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez")
+        val c = Calendar.getInstance(TimeZone.getDefault())
+        c.timeInMillis = epochMillis
+        return names[c.get(Calendar.MONTH)]
+    }
+
     fun dayLabel(epochMillis: Long): String {
         val c = Calendar.getInstance(TimeZone.getDefault())
         c.timeInMillis = epochMillis

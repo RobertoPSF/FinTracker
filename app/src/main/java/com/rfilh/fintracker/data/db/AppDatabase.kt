@@ -7,8 +7,13 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
-    entities = [RawNotificationEntity::class, TransactionEntity::class, CategoryBudgetEntity::class],
-    version = 4,
+    entities = [
+        RawNotificationEntity::class,
+        TransactionEntity::class,
+        CategoryBudgetEntity::class,
+        LoanPaymentEntity::class
+    ],
+    version = 5,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -16,6 +21,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun rawDao(): RawNotificationDao
     abstract fun transactionDao(): TransactionDao
     abstract fun categoryBudgetDao(): CategoryBudgetDao
+    abstract fun loanPaymentDao(): LoanPaymentDao
 
     companion object {
         const val NAME = "fintracker.db"
@@ -43,6 +49,20 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
-        val MIGRATIONS: Array<Migration> = arrayOf(M1_2, M2_3, M3_4)
+        private val M4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `loan_payment` (" +
+                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`person` TEXT NOT NULL, " +
+                        "`borrowed` INTEGER NOT NULL, " +
+                        "`amountCents` INTEGER NOT NULL, " +
+                        "`createdAt` INTEGER NOT NULL)"
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_loan_payment_person` ON `loan_payment` (`person`)")
+            }
+        }
+
+        val MIGRATIONS: Array<Migration> = arrayOf(M1_2, M2_3, M3_4, M4_5)
     }
 }

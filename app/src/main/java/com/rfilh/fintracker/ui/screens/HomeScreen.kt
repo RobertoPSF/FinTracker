@@ -59,7 +59,13 @@ fun HomeScreen(
     onOpenReceivables: () -> Unit,
     onOpenInsights: () -> Unit,
     onOpenSettings: () -> Unit,
-    onOpenManualPix: () -> Unit
+    onOpenManualPix: () -> Unit,
+    onOpenCategorias: () -> Unit,
+    onOpenRanking: () -> Unit,
+    onOpenComparativo: () -> Unit,
+    onOpenPredicted: () -> Unit,
+    onOpenAlerts: () -> Unit,
+    onOpenMeta: () -> Unit
 ) {
     val colors = MaterialTheme.appColors
     val context = LocalContext.current
@@ -193,12 +199,21 @@ fun HomeScreen(
                         Row(modifier = Modifier.weight(1f)) { ShortcutCard(AppIcons.Cobrar, "A cobrar", onClick = onOpenReceivables) }
                         Row(modifier = Modifier.weight(1f)) { ShortcutCard(AppIcons.Grafico, "Gráfico", onClick = onOpenInsights) }
                     }
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(modifier = Modifier.weight(1f)) { ShortcutCard(AppIcons.PieChart, "Gastos por categoria", onClick = onOpenCategorias) }
+                        Row(modifier = Modifier.weight(1f)) { ShortcutCard(AppIcons.Grafico, "Meta de economia", onClick = onOpenMeta) }
+                    }
                 }
-                Text(
-                    "CONTAS CONECTADAS",
-                    style = MaterialTheme.typography.labelLarge.copy(color = colors.muted),
-                    modifier = Modifier.padding(bottom = 10.dp)
-                )
+
+                SectionHeader("Mais recursos")
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 20.dp)) {
+                    MoreLink("Ranking de contrapartes", onOpenRanking)
+                    MoreLink("Comparativo mensal", onOpenComparativo)
+                    MoreLink("Contas previstas", onOpenPredicted)
+                    MoreLink("Alertas", onOpenAlerts)
+                }
+
+                SectionHeader("Contas conectadas")
             }
 
             items(banks, key = { it.bankPackage }) { bank ->
@@ -227,5 +242,28 @@ fun HomeScreen(
 
             item { Spacer(Modifier.size(24.dp)) }
         }
+    }
+}
+
+@Composable
+private fun MoreLink(label: String, onClick: () -> Unit) {
+    val colors = MaterialTheme.appColors
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(colors.card, RoundedCornerShape(14.dp))
+            .border(1.dp, colors.border, RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 13.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        androidx.compose.material3.Icon(
+            AppIcons.ChevronRight,
+            contentDescription = null,
+            tint = colors.muted,
+            modifier = Modifier.size(12.dp)
+        )
     }
 }

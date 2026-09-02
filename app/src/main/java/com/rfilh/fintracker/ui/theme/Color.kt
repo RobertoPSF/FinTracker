@@ -57,3 +57,25 @@ val LoanAvatarBg = Color(0xFFEAF0F5)
 
 val ToastBg = Color(0xFF14212E)
 val ToastText = Color(0xFFFFFFFF)
+
+/** Cor estável por categoria para os gráficos de "Gastos por categoria". */
+object CategoryColors {
+    private val known = mapOf(
+        "Alimentação" to Color(0xFFE3A857),
+        "Transporte" to Color(0xFF3E6E97),
+        "Moradia" to Color(0xFF1B3A5C),
+        "Lazer" to Color(0xFFB36A9C),
+        "Saúde" to Color(0xFF7FA88F),
+        "Assinaturas" to Color(0xFFD6845A),
+        "Compras" to Color(0xFF9C7BB3),
+        "Salário" to Color(0xFF1E8E5A),
+        "Empréstimo" to Color(0xFF8FB8DE)
+    )
+    private val fallback = listOf(
+        Color(0xFF8C95A0), Color(0xFF6E9A8D), Color(0xFFB08968),
+        Color(0xFF7C89B0), Color(0xFFAF6E8F), Color(0xFF5F8CA6)
+    )
+
+    fun colorFor(category: String): Color =
+        known[category] ?: fallback[(category.hashCode().and(0x7FFFFFFF)) % fallback.size]
+}

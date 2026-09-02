@@ -8,6 +8,7 @@ object AppSettings {
     private const val AUTO_PURGE_RAW = "auto_purge_raw"
     private const val DARK_MODE = "dark_mode"
     private const val DEV_NOTICE_DISMISSED = "dev_notice_dismissed"
+    private const val SAVINGS_GOAL_CENTS = "savings_goal_cents"
 
     private fun prefs(context: Context) = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
 
@@ -28,5 +29,12 @@ object AppSettings {
 
     fun setDevNoticeDismissed(context: Context, dismissed: Boolean) {
         prefs(context).edit().putBoolean(DEV_NOTICE_DISMISSED, dismissed).apply()
+    }
+
+    /** Meta de economia mensal em centavos; 0 = sem meta definida. */
+    fun savingsGoalCents(context: Context): Long = prefs(context).getLong(SAVINGS_GOAL_CENTS, 0L)
+
+    fun setSavingsGoalCents(context: Context, cents: Long) {
+        prefs(context).edit().putLong(SAVINGS_GOAL_CENTS, cents).apply()
     }
 }

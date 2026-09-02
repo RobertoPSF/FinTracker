@@ -44,6 +44,17 @@ interface RawNotificationDao {
 }
 
 @Dao
+interface LoanPaymentDao {
+
+    @Insert
+    suspend fun insert(entity: LoanPaymentEntity)
+
+    /** Total já abatido por pessoa. */
+    @Query("SELECT person AS person, IFNULL(SUM(amountCents), 0) AS paidCents FROM loan_payment GROUP BY person")
+    fun observePaid(): Flow<List<PersonPaidRow>>
+}
+
+@Dao
 interface CategoryBudgetDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -120,6 +131,24 @@ interface TransactionDao {
             "GROUP BY loanPerson ORDER BY pendingCents DESC"
     )
     fun observeReceivables(): Flow<List<PersonBalanceRow>>
+
+    /** Gasto do mês somado por categoria (só saídas categorizadas). */
+    @Query(
+        "SELECT category AS category, IFNULL(SUM(amountCents), 0) AS cents " +
+            "FROM transactions " +
+            "WHERE type = 'EXPENSE' AND category IS NOT NULL AND yearMonth = :yearMonth " +
+            "GROUP BY category ORDER BY cents DESC"
+    )
+    fun observeCategorySpend(yearMonth: String): Flow<List<CategorySpendRow>>
+
+    /** Ranking de contrapartes por total movimentado no tipo indicado, histórico completo. */
+    @Query(
+        "SELECT counterparty AS name, IFNULL(SUM(amountCents), 0) AS cents, COUNT(*) AS count " +
+            "FROM transactions " +
+            "WHERE type = :type AND counterparty IS NOT NULL AND counterparty != '' " +
+            "GROUP BY counterparty ORDER BY cents DESC LIMIT 20"
+    )
+    fun observeCounterpartyTotals(type: TransactionType): Flow<List<CounterpartyTotalRow>>
 
     @Query("SELECT * FROM transactions ORDER BY occurredAt DESC")
     suspend fun all(): List<TransactionEntity>

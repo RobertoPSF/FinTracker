@@ -2,20 +2,32 @@ package com.rfilh.fintracker.data.repo
 
 import com.rfilh.fintracker.core.Anonymizer
 import com.rfilh.fintracker.core.Dates
+import com.rfilh.fintracker.core.PredictedBills
+import com.rfilh.fintracker.core.RecurrenceDetector
+import com.rfilh.fintracker.core.SpendingAlerts
 import com.rfilh.fintracker.core.TextNormalizer
 import com.rfilh.fintracker.data.db.CategoryBudgetDao
 import com.rfilh.fintracker.data.db.CategoryBudgetEntity
+import com.rfilh.fintracker.data.db.LoanPaymentDao
+import com.rfilh.fintracker.data.db.LoanPaymentEntity
 import com.rfilh.fintracker.data.db.RawNotificationDao
 import com.rfilh.fintracker.data.db.TransactionDao
 import com.rfilh.fintracker.domain.model.BackupImportSummary
 import com.rfilh.fintracker.domain.model.BankSummary
 import com.rfilh.fintracker.domain.model.CategoryBudget
+import com.rfilh.fintracker.domain.model.CategorySpend
+import com.rfilh.fintracker.domain.model.CounterpartyTotal
 import com.rfilh.fintracker.domain.model.MonthBalance
+import com.rfilh.fintracker.domain.model.MonthComparison
 import com.rfilh.fintracker.domain.model.PersonBalance
+import com.rfilh.fintracker.domain.model.PredictedBill
 import com.rfilh.fintracker.domain.model.RawCapture
+import com.rfilh.fintracker.domain.model.SpendingAlert
 import com.rfilh.fintracker.domain.model.Transaction
+import com.rfilh.fintracker.domain.model.TransactionType
 import com.rfilh.fintracker.domain.repo.FinanceRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
@@ -24,7 +36,8 @@ import kotlinx.serialization.json.Json
 class FinanceRepositoryImpl(
     private val transactionDao: TransactionDao,
     private val rawDao: RawNotificationDao,
-    private val categoryBudgetDao: CategoryBudgetDao
+    private val categoryBudgetDao: CategoryBudgetDao,
+    private val loanPaymentDao: LoanPaymentDao
 ) : FinanceRepository {
 
     override fun monthBalance(yearMonth: String): Flow<MonthBalance> =
@@ -58,8 +71,12 @@ class FinanceRepositoryImpl(
 
     override fun reviewCount(): Flow<Int> = transactionDao.observeReviewCount()
 
+    /** Junta o saldo a receber das transações com os pagamentos parciais lançados à mão. */
     override fun receivables(): Flow<List<PersonBalance>> =
-        transactionDao.observeReceivables().map { rows -> rows.map { it.toDomain() } }
+        combine(transactionDao.observeReceivables(), loanPaymentDao.observePaid()) { balances, paid ->
+            val paidByPerson = paid.associate { it.person to it.paidCents }
+            balances.map { it.toDomain().copy(paidCents = paidByPerson[it.person] ?: 0L) }
+        }
 
     override fun capturedCount(): Flow<Int> = rawDao.observeCount()
 
@@ -85,6 +102,49 @@ class FinanceRepositoryImpl(
     override fun categoryBudgets(): Flow<List<CategoryBudget>> =
         categoryBudgetDao.observeAll().map { rows -> rows.map { it.toDomain() } }
 
+    override fun categorySpend(yearMonth: String): Flow<List<CategorySpend>> =
+        combine(
+            transactionDao.observeCategorySpend(yearMonth),
+            transactionDao.observeCategorySpend(Dates.shift(yearMonth, -1))
+        ) { current, previous ->
+            val prevByCategory = previous.associate { it.category to it.cents }
+            current
+                .map { CategorySpend(it.category, it.cents, prevByCategory[it.category] ?: 0L) }
+                .sortedByDescending { it.cents }
+        }
+
+    override fun counterpartyRanking(expense: Boolean): Flow<List<CounterpartyTotal>> {
+        val type = if (expense) TransactionType.EXPENSE else TransactionType.INCOME
+        return transactionDao.observeCounterpartyTotals(type).map { rows -> rows.map { it.toDomain() } }
+    }
+
+    override fun monthComparison(yearMonth: String): Flow<MonthComparison> {
+        val prev = Dates.shift(yearMonth, -1)
+        val lastYear = Dates.shift(yearMonth, -12)
+        return combine(
+            transactionDao.observeMonthTotals(yearMonth),
+            transactionDao.observeMonthTotals(prev),
+            transactionDao.observeMonthTotals(lastYear)
+        ) { cur, pr, ly ->
+            val lastYearBalance = MonthBalance(lastYear, ly.incomeCents, ly.expenseCents)
+            MonthComparison(
+                current = MonthBalance(yearMonth, cur.incomeCents, cur.expenseCents),
+                previous = MonthBalance(prev, pr.incomeCents, pr.expenseCents),
+                sameMonthLastYear = lastYearBalance.takeIf { it.incomeCents > 0 || it.expenseCents > 0 }
+            )
+        }
+    }
+
+    override fun predictedBills(): Flow<List<PredictedBill>> =
+        recentTransactions(6).map { txs ->
+            PredictedBills.forecast(RecurrenceDetector.detect(txs), System.currentTimeMillis())
+        }
+
+    override fun spendingAlerts(): Flow<List<SpendingAlert>> =
+        recentTransactions(6).map { txs ->
+            SpendingAlerts.compute(txs, RecurrenceDetector.detect(txs), System.currentTimeMillis())
+        }
+
     override suspend fun byId(id: Long): Transaction? = transactionDao.byId(id)?.toDomain()
 
     override suspend fun save(transaction: Transaction) {
@@ -94,9 +154,22 @@ class FinanceRepositoryImpl(
 
     override suspend fun delete(id: Long) = transactionDao.delete(id)
 
+    override suspend fun addLoanPayment(person: String, amountCents: Long) {
+        if (amountCents <= 0) return
+        loanPaymentDao.insert(
+            LoanPaymentEntity(
+                person = person,
+                amountCents = amountCents,
+                createdAt = System.currentTimeMillis()
+            )
+        )
+    }
+
     override suspend fun purgeRawContent(): Int = rawDao.purgeParsedContent()
 
     override suspend fun exportAll(): List<Transaction> = transactionDao.all().map { it.toDomain() }
+
+    override suspend fun exportCsv(): String = Exporter.toCsv(exportAll())
 
     override suspend fun exportBackupJson(): String = BackupCodec.encode(exportAll())
 

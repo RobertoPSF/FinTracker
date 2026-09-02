@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -32,6 +33,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.rfilh.fintracker.core.Dates
@@ -221,6 +223,65 @@ fun TransactionRow(transaction: Transaction, onClick: () -> Unit) {
     }
 }
 
+/** Cabeçalho padrão das telas internas: botão voltar + título (+ ação opcional à direita). */
+@Composable
+fun ScreenHeader(title: String, onBack: () -> Unit, trailing: (@Composable () -> Unit)? = null) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconPillButton(AppIcons.ChevronLeft, "Voltar", onBack)
+        Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+        trailing?.invoke()
+    }
+}
+
+/** Rótulo de seção em caixa alta (CONTAS CONECTADAS, GASTOS RECORRENTES, ...). */
+@Composable
+fun SectionHeader(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text.uppercase(),
+        style = MaterialTheme.typography.labelLarge.copy(color = MaterialTheme.appColors.muted),
+        modifier = modifier.padding(bottom = 10.dp)
+    )
+}
+
+/** Estado vazio centralizado usado em várias telas de lista. */
+@Composable
+fun EmptyState(title: String, subtitle: String) {
+    val colors = MaterialTheme.appColors
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 64.dp, horizontal = 20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Text(title, style = MaterialTheme.typography.bodyLarge.copy(color = colors.muted))
+        Text(subtitle, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
+    }
+}
+
+/** Barra de progresso fina (limites de categoria, meta de economia). */
+@Composable
+fun ProgressTrack(fraction: Float, color: Color, height: Dp = 8.dp) {
+    val colors = MaterialTheme.appColors
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(height)
+            .clip(RoundedCornerShape(height / 2))
+            .background(colors.border)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(fraction.coerceIn(0f, 1f))
+                .height(height)
+                .clip(RoundedCornerShape(height / 2))
+                .background(color)
+        )
+    }
+}
+
 /** Rótulo pequeno acima de um campo de formulário (Editar, Registrar Pix enviado). */
 @Composable
 fun FieldLabel(text: String) {
@@ -233,15 +294,20 @@ fun ShortcutCard(icon: ImageVector, label: String, badgeCount: Int = 0, onClick:
     val colors = MaterialTheme.appColors
     Box(
         modifier = Modifier
-            .aspectRatio(1.7f)
+            .aspectRatio(1.55f)
             .background(colors.card, RoundedCornerShape(16.dp))
             .border(1.dp, colors.border, RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
             .padding(14.dp)
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Icon(icon, label, tint = colors.primary, modifier = Modifier.size(20.dp))
-            Text(label, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                label,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 2,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
         }
         if (badgeCount > 0) {
             Box(

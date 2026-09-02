@@ -25,7 +25,7 @@ class AppContainer(private val context: Context) {
     val db: AppDatabase by lazy { DatabaseFactory.get(context) }
 
     val repository: FinanceRepository by lazy {
-        FinanceRepositoryImpl(db.transactionDao(), db.rawDao(), db.categoryBudgetDao())
+        FinanceRepositoryImpl(db.transactionDao(), db.rawDao(), db.categoryBudgetDao(), db.loanPaymentDao())
     }
 
     val ingestor: NotificationIngestor by lazy {
@@ -51,6 +51,9 @@ class AppContainer(private val context: Context) {
 
     fun isAutoPurgeRawEnabled(): Boolean = AppSettings.autoPurgeRaw(context)
     fun setAutoPurgeRawEnabled(enabled: Boolean) = AppSettings.setAutoPurgeRaw(context, enabled)
+
+    fun savingsGoalCents(): Long = AppSettings.savingsGoalCents(context)
+    fun setSavingsGoalCents(cents: Long) = AppSettings.setSavingsGoalCents(context, cents)
 
     private val _darkMode by lazy { MutableStateFlow(AppSettings.darkMode(context)) }
     val darkMode: StateFlow<Boolean> by lazy { _darkMode.asStateFlow() }

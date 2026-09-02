@@ -6,7 +6,13 @@ import com.rfilh.fintracker.domain.model.TransactionType
 data class RecurringItem(
     val counterparty: String,
     val avgAmountCents: Long,
-    val monthsSeen: List<String>
+    val monthsSeen: List<String>,
+    /** Dia do mês típico em que a cobrança cai (mediana), para a agenda de contas previstas. */
+    val typicalDayOfMonth: Int = 1,
+    /** Instante da ocorrência mais recente do cluster. */
+    val lastOccurredAt: Long = 0L,
+    /** Valores individuais das ocorrências, em ordem cronológica — base para detectar reajuste. */
+    val amountsChrono: List<Long> = emptyList()
 )
 
 /**
@@ -26,10 +32,15 @@ object RecurrenceDetector {
             clusters.filter { hasConsecutiveMonths(it) }
                 .maxByOrNull { it.size }
                 ?.let { cluster ->
+                    val chrono = cluster.sortedBy { it.occurredAt }
+                    val days = chrono.map { Dates.dayOfMonth(it.occurredAt) }.filter { it in 1..31 }.sorted()
                     RecurringItem(
                         counterparty = cluster.first().counterparty.orEmpty(),
                         avgAmountCents = cluster.map { it.amountCents }.average().toLong(),
-                        monthsSeen = cluster.map { it.yearMonth }.distinct().sorted()
+                        monthsSeen = cluster.map { it.yearMonth }.distinct().sorted(),
+                        typicalDayOfMonth = if (days.isEmpty()) 1 else days[days.size / 2],
+                        lastOccurredAt = chrono.last().occurredAt,
+                        amountsChrono = chrono.map { it.amountCents }
                     )
                 }
         }.sortedByDescending { it.monthsSeen.size }

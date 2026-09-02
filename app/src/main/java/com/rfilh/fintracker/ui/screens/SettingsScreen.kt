@@ -43,6 +43,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rfilh.fintracker.core.Money
+import com.rfilh.fintracker.report.MonthlyPdf
 import com.rfilh.fintracker.ui.theme.ActionNavy
 import com.rfilh.fintracker.ui.theme.AppIcons
 import com.rfilh.fintracker.ui.theme.DangerBg
@@ -90,6 +91,24 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
             ToastBus.show("Notificações exportadas (anonimizado)")
         }
     }
+    val exportCsvLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val csv = vm.exportCsv()
+            context.contentResolver.openOutputStream(uri)?.use { it.write(csv.toByteArray()) }
+            ToastBus.show("CSV exportado")
+        }
+    }
+    val exportPdfLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val ok = runCatching {
+                val input = vm.monthlyReportInput()
+                context.contentResolver.openOutputStream(uri)?.use { MonthlyPdf.write(it, input) }
+            }.isSuccess
+            ToastBus.show(if (ok) "Relatório PDF gerado" else "Não foi possível gerar o PDF")
+        }
+    }
 
     var showAddLimit by remember { mutableStateOf(false) }
     var newCategory by remember { mutableStateOf("") }
@@ -134,6 +153,11 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
             SectionLabel("Backup")
             SettingsButton("Exportar backup") { exportBackupLauncher.launch("fintracker-backup.json") }
             SettingsButton("Restaurar backup") { importBackupLauncher.launch(arrayOf("application/json")) }
+            Spacer18()
+
+            SectionLabel("Relatórios")
+            SettingsButton("Exportar CSV (Excel / Sheets)") { exportCsvLauncher.launch("fintracker-lancamentos.csv") }
+            SettingsButton("Gerar relatório mensal em PDF") { exportPdfLauncher.launch("fintracker-relatorio.pdf") }
             Spacer18()
 
             SectionLabel("Limites de gasto por categoria")

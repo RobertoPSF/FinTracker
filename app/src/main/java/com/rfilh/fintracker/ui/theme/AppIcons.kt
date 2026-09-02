@@ -89,6 +89,11 @@ object AppIcons {
 
     val Grafico: ImageVector by lazy { singleStroke("Grafico", 24f, 24f, 2f, "M 5 20 L 5 13 M 12 20 L 12 6 M 19 20 L 19 10") }
 
+    /** Fatia de pizza — atalho "Gastos por categoria" (mesmo glifo do protótipo Claude Design). */
+    val PieChart: ImageVector by lazy {
+        singleStroke("PieChart", 24f, 24f, 1.6f, "M 12 2 L 12 12 L 20.5 17 A 10 10 0 1 0 12 2 Z")
+    }
+
     val Plus: ImageVector by lazy { singleStroke("Plus", 24f, 24f, 2f, "M 12 5 L 12 19 M 5 12 L 19 12") }
 
     val Bell: ImageVector by lazy {

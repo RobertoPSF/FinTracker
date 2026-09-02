@@ -4,18 +4,25 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rfilh.fintracker.AppContainer
 import com.rfilh.fintracker.core.Dates
+import com.rfilh.fintracker.core.Money
 import com.rfilh.fintracker.core.RecurrenceDetector
 import com.rfilh.fintracker.core.RecurringItem
 import com.rfilh.fintracker.domain.model.BackupImportSummary
 import com.rfilh.fintracker.domain.model.BankSummary
 import com.rfilh.fintracker.domain.model.CategoryBudget
+import com.rfilh.fintracker.domain.model.CategorySpend
 import com.rfilh.fintracker.domain.model.Confidence
+import com.rfilh.fintracker.domain.model.CounterpartyTotal
 import com.rfilh.fintracker.domain.model.LoanStatus
 import com.rfilh.fintracker.domain.model.MonthBalance
+import com.rfilh.fintracker.domain.model.MonthComparison
 import com.rfilh.fintracker.domain.model.PersonBalance
+import com.rfilh.fintracker.domain.model.PredictedBill
+import com.rfilh.fintracker.domain.model.SpendingAlert
 import com.rfilh.fintracker.domain.model.Transaction
 import com.rfilh.fintracker.domain.model.TransactionType
 import com.rfilh.fintracker.domain.repo.FinanceRepository
+import com.rfilh.fintracker.report.MonthlyReportInput
 import com.rfilh.fintracker.ui.theme.ToastBus
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +33,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -54,8 +62,21 @@ class HomeViewModel(private val repo: FinanceRepository) : ViewModel() {
 @OptIn(ExperimentalCoroutinesApi::class)
 class StatementViewModel(
     private val repo: FinanceRepository,
-    private val bankPackage: String?
+    private val bankPackage: String?,
+    initialCategory: String? = null
 ) : ViewModel() {
+
+    data class Filters(
+        val category: String? = null,
+        val type: TransactionType? = null,
+        val minText: String = "",
+        val maxText: String = "",
+        val onlyUnreviewed: Boolean = false
+    ) {
+        val activeCount: Int get() = listOf(
+            category != null, type != null, minText.isNotBlank(), maxText.isNotBlank(), onlyUnreviewed
+        ).count { it }
+    }
 
     private val _month = MutableStateFlow(Dates.currentYearMonth())
     val month: StateFlow<String> = _month.asStateFlow()
@@ -63,28 +84,51 @@ class StatementViewModel(
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
 
+    private val _filters = MutableStateFlow(Filters(category = initialCategory?.ifBlank { null }))
+    val filters: StateFlow<Filters> = _filters.asStateFlow()
+
     /** Busca por pessoa/instituição ignora o mês selecionado — visão de auditoria, não fica
      *  presa ao mês corrente (útil pra conferir todo o histórico com um cliente/fornecedor). */
-    val transactions: StateFlow<List<Transaction>> = combine(_month, _query) { ym, q -> ym to q }
-        .flatMapLatest { (ym, q) ->
-            when {
-                q.isNotBlank() -> repo.searchTransactions(q)
-                bankPackage.isNullOrBlank() -> repo.transactions(ym)
-                else -> repo.transactionsByBank(ym, bankPackage)
+    private val baseList: kotlinx.coroutines.flow.Flow<List<Transaction>> =
+        combine(_month, _query) { ym, q -> ym to q }
+            .flatMapLatest { (ym, q) ->
+                when {
+                    q.isNotBlank() -> repo.searchTransactions(q)
+                    bankPackage.isNullOrBlank() -> repo.transactions(ym)
+                    else -> repo.transactionsByBank(ym, bankPackage)
+                }
             }
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    val title: StateFlow<String> = combine(transactions, _query) { list, q ->
+    val transactions: StateFlow<List<Transaction>> = combine(baseList, _filters) { list, f ->
+        val min = f.minText.takeIf { it.isNotBlank() }?.let { Money.parseBrlToCents(it) }
+        val max = f.maxText.takeIf { it.isNotBlank() }?.let { Money.parseBrlToCents(it) }
+        list.filter { t ->
+            (f.category == null || t.category == f.category) &&
+                (f.type == null || t.type == f.type) &&
+                (min == null || t.amountCents >= min) &&
+                (max == null || t.amountCents <= max) &&
+                (!f.onlyUnreviewed || !t.reviewed)
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val title: StateFlow<String> = combine(transactions, _query, _filters) { list, q, f ->
         when {
             q.isNotBlank() -> "Busca: \"$q\""
-            bankPackage.isNullOrBlank() -> "Extrato geral"
-            else -> list.firstOrNull()?.bankName ?: "Extrato"
+            !bankPackage.isNullOrBlank() -> list.firstOrNull()?.bankName ?: "Extrato"
+            f.category != null -> f.category
+            else -> "Extrato geral"
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), if (bankPackage.isNullOrBlank()) "Extrato geral" else "Extrato")
 
     fun shiftMonth(delta: Int) { _month.value = Dates.shift(_month.value, delta) }
     fun setQuery(q: String) { _query.value = q }
+
+    fun setFilterCategory(c: String?) { _filters.update { it.copy(category = c?.ifBlank { null }) } }
+    fun setFilterType(t: TransactionType?) { _filters.update { it.copy(type = t) } }
+    fun setFilterMin(v: String) { _filters.update { it.copy(minText = v) } }
+    fun setFilterMax(v: String) { _filters.update { it.copy(maxText = v) } }
+    fun toggleOnlyUnreviewed() { _filters.update { it.copy(onlyUnreviewed = !it.onlyUnreviewed) } }
+    fun clearFilters() { _filters.value = Filters() }
 }
 
 class ReviewViewModel(private val repo: FinanceRepository) : ViewModel() {
@@ -188,9 +232,104 @@ class ManualPixViewModel(private val repo: FinanceRepository, container: AppCont
     }
 }
 
-class ReceivablesViewModel(repo: FinanceRepository) : ViewModel() {
+/** "A cobrar": consolida quanto cada pessoa te deve e registra pagamentos parciais recebidos. */
+class ReceivablesViewModel(private val repo: FinanceRepository) : ViewModel() {
+
     val people: StateFlow<List<PersonBalance>> = repo.receivables()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun registerPayment(person: String, amountText: String) = viewModelScope.launch {
+        val cents = Money.parseBrlToCents(amountText)
+        if (cents == null || cents <= 0) {
+            ToastBus.show("Informe um valor")
+            return@launch
+        }
+        repo.addLoanPayment(person, cents)
+        ToastBus.show("Pagamento parcial registrado")
+    }
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class CategoriesViewModel(private val repo: FinanceRepository) : ViewModel() {
+
+    private val _month = MutableStateFlow(Dates.currentYearMonth())
+    val month: StateFlow<String> = _month.asStateFlow()
+
+    val categories: StateFlow<List<CategorySpend>> = _month
+        .flatMapLatest { repo.categorySpend(it) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val totalCents: StateFlow<Long> = categories
+        .map { list -> list.sumOf { it.cents } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0L)
+
+    fun shiftMonth(delta: Int) { _month.value = Dates.shift(_month.value, delta) }
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class RankingViewModel(private val repo: FinanceRepository) : ViewModel() {
+
+    private val _expense = MutableStateFlow(true)
+    val expense: StateFlow<Boolean> = _expense.asStateFlow()
+
+    val ranking: StateFlow<List<CounterpartyTotal>> = _expense
+        .flatMapLatest { repo.counterpartyRanking(it) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun setExpense(value: Boolean) { _expense.value = value }
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class ComparativoViewModel(private val repo: FinanceRepository) : ViewModel() {
+
+    private val _month = MutableStateFlow(Dates.currentYearMonth())
+    val month: StateFlow<String> = _month.asStateFlow()
+
+    val comparison: StateFlow<MonthComparison?> = _month
+        .flatMapLatest { repo.monthComparison(it) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    fun shiftMonth(delta: Int) { _month.value = Dates.shift(_month.value, delta) }
+}
+
+class PredictedBillsViewModel(repo: FinanceRepository) : ViewModel() {
+    val bills: StateFlow<List<PredictedBill>> = repo.predictedBills()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+}
+
+class AlertsViewModel(repo: FinanceRepository) : ViewModel() {
+    val alerts: StateFlow<List<SpendingAlert>> = repo.spendingAlerts()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class MetaViewModel(
+    private val repo: FinanceRepository,
+    private val container: AppContainer
+) : ViewModel() {
+
+    private val _month = MutableStateFlow(Dates.currentYearMonth())
+    val month: StateFlow<String> = _month.asStateFlow()
+
+    private val _goalCents = MutableStateFlow(container.savingsGoalCents())
+    val goalCents: StateFlow<Long> = _goalCents.asStateFlow()
+
+    val balance: StateFlow<MonthBalance> = _month
+        .flatMapLatest { repo.monthBalance(it) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MonthBalance(_month.value, 0, 0))
+
+    fun shiftMonth(delta: Int) { _month.value = Dates.shift(_month.value, delta) }
+
+    fun setGoal(text: String) {
+        val cents = Money.parseBrlToCents(text)
+        if (cents == null || cents < 0) {
+            ToastBus.show("Valor inválido")
+            return
+        }
+        container.setSavingsGoalCents(cents)
+        _goalCents.value = cents
+        ToastBus.show("Meta atualizada")
+    }
 }
 
 class InsightsViewModel(repo: FinanceRepository) : ViewModel() {
@@ -258,6 +397,20 @@ class SettingsViewModel(private val repo: FinanceRepository, private val contain
     }
 
     suspend fun exportBackupJson(): String = repo.exportBackupJson()
+
+    suspend fun exportCsv(): String = repo.exportCsv()
+
+    /** Junta os insumos do relatório mensal do mês corrente. */
+    suspend fun monthlyReportInput(): MonthlyReportInput {
+        val all = repo.exportAll()
+        val ym = Dates.currentYearMonth()
+        val fromMonth = Dates.shift(ym, -5)
+        return MonthlyReportInput(
+            yearMonth = ym,
+            monthTransactions = all.filter { it.yearMonth == ym },
+            recurring = RecurrenceDetector.detect(all.filter { it.yearMonth >= fromMonth })
+        )
+    }
 
     fun importBackup(json: String) = viewModelScope.launch {
         val summary: BackupImportSummary = repo.importBackup(json)

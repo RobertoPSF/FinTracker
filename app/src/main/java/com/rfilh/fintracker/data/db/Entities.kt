@@ -65,6 +65,21 @@ data class CategoryBudgetEntity(
     val alertedYearMonth: String? = null
 )
 
+/**
+ * Pagamento parcial de um empréstimo, registrado à mão pelo usuário. Não é uma transação
+ * (não veio de notificação, não entra em extrato/balanço) — só abate o saldo devedor mostrado
+ * em "A cobrar".
+ */
+@Entity(tableName = "loan_payment", indices = [Index("person")])
+data class LoanPaymentEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val person: String,
+    /** Reservado (sempre false hoje) — mantido no schema para não forçar migração no dev. */
+    val borrowed: Boolean = false,
+    val amountCents: Long,
+    val createdAt: Long
+)
+
 data class BankSummaryRow(
     val bankPackage: String,
     val bankName: String,
@@ -87,5 +102,21 @@ data class MonthlyTrendRow(
 data class PersonBalanceRow(
     val person: String,
     val pendingCents: Long,
+    val count: Int
+)
+
+data class PersonPaidRow(
+    val person: String,
+    val paidCents: Long
+)
+
+data class CategorySpendRow(
+    val category: String,
+    val cents: Long
+)
+
+data class CounterpartyTotalRow(
+    val name: String,
+    val cents: Long,
     val count: Int
 )

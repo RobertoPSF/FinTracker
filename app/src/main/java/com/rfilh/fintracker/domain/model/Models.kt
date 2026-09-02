@@ -45,8 +45,55 @@ data class BankSummary(
 
 data class PersonBalance(
     val person: String,
+    /** Total original do empréstimo (soma das transações), antes de abater pagamentos parciais. */
     val pendingCents: Long,
+    val count: Int,
+    /** Soma dos pagamentos parciais já registrados à mão para essa pessoa. */
+    val paidCents: Long = 0
+) {
+    val remainingCents: Long get() = (pendingCents - paidCents).coerceAtLeast(0)
+    val partiallyPaid: Boolean get() = paidCents > 0
+}
+
+data class CategorySpend(
+    val category: String,
+    val cents: Long,
+    /** Mesmo gasto no mês anterior, para o comparativo (0 se não havia). */
+    val previousCents: Long
+) {
+    /** Variação percentual vs. mês anterior; null quando não há base de comparação. */
+    val deltaPercent: Int? get() =
+        if (previousCents <= 0) null else Math.round((cents - previousCents) * 100.0 / previousCents).toInt()
+}
+
+data class CounterpartyTotal(
+    val name: String,
+    val cents: Long,
     val count: Int
+)
+
+data class MonthComparison(
+    val current: MonthBalance,
+    val previous: MonthBalance,
+    /** Mesmo mês do ano anterior; null quando ainda não há dados. */
+    val sameMonthLastYear: MonthBalance?
+)
+
+data class PredictedBill(
+    val name: String,
+    val amountCents: Long,
+    val dueAt: Long,
+    val daysUntil: Int
+) {
+    val soon: Boolean get() = daysUntil in 0..5
+}
+
+enum class AlertKind { REAJUSTE, ATIPICO, RESUMO }
+
+data class SpendingAlert(
+    val kind: AlertKind,
+    val text: String,
+    val atMillis: Long
 )
 
 data class CategoryBudget(
