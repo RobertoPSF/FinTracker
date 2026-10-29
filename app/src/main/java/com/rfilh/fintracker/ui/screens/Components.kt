@@ -167,8 +167,12 @@ fun PillToggle(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
 @Composable
 fun TransactionRow(transaction: Transaction, onClick: () -> Unit) {
     val colors = MaterialTheme.appColors
-    val amountColor = if (transaction.type == TransactionType.EXPENSE) ExpenseColor else IncomeColor
-    val sign = if (transaction.type == TransactionType.EXPENSE) "-" else "+"
+    // Tipo desconhecido fica neutro: não é entrada nem saída até o usuário revisar.
+    val (amountBg, sign) = when (transaction.type) {
+        TransactionType.INCOME -> IncomeColor to "+ "
+        TransactionType.EXPENSE -> ExpenseColor to "− "
+        TransactionType.UNKNOWN -> colors.muted to ""
+    }
 
     Row(
         modifier = Modifier
@@ -180,17 +184,11 @@ fun TransactionRow(transaction: Transaction, onClick: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Sem contraparte identificada (comum em compra no cartão sem nome de estabelecimento no
-        // texto), mas com a modalidade do cartão: "Cartão Mercado Pago - Crédito" é bem mais útil
-        // que repetir o nome do banco como se fosse o título da transação.
-        val cardFallbackTitle = transaction.cardType?.let { "Cartão ${transaction.bankName} - $it" }
-        val title = transaction.counterparty ?: cardFallbackTitle ?: transaction.bankName
-
         AvatarBadge(BankPalette.colorFor(transaction.bankPackage), BankPalette.initialFor(transaction.bankName), packageName = transaction.bankPackage)
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
-                    title,
+                    transaction.bankName,
                     style = MaterialTheme.typography.bodyLarge,
                     maxLines = 1
                 )
@@ -209,17 +207,25 @@ fun TransactionRow(transaction: Transaction, onClick: () -> Unit) {
                     }
                 }
             }
-            // Banco já aparece no título quando ele veio do fallback "Cartão <banco> - <modalidade>"
-            // — evita repetir ("Cartão Mercado Pago - Crédito" / "Mercado Pago · 31/08").
             val meta = listOfNotNull(
-                transaction.bankName.takeIf { transaction.counterparty != null || cardFallbackTitle == null },
                 Dates.dayLabel(transaction.occurredAt),
-                transaction.category,
-                transaction.cardType.takeIf { transaction.counterparty != null }
+                transaction.counterparty,
+                transaction.category
             ).joinToString(" · ")
             Text(meta, style = MaterialTheme.typography.bodySmall, maxLines = 1)
         }
-        Text("$sign ${Money.format(transaction.amountCents)}", color = amountColor, style = MaterialTheme.typography.bodyLarge.copy(color = amountColor))
+        Box(
+            modifier = Modifier
+                .background(amountBg, RoundedCornerShape(8.dp))
+                .padding(horizontal = 8.dp, vertical = 4.dp)
+        ) {
+            Text(
+                sign + Money.format(transaction.amountCents),
+                color = Color.White,
+                style = MaterialTheme.typography.bodyLarge.copy(color = Color.White, fontWeight = FontWeight.Bold),
+                maxLines = 1
+            )
+        }
     }
 }
 

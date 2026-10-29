@@ -8,6 +8,7 @@ import com.rfilh.fintracker.FinTrackerApp
 import com.rfilh.fintracker.core.TextNormalizer
 import com.rfilh.fintracker.data.BankIconCache
 import com.rfilh.fintracker.domain.model.TransactionType
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -16,7 +17,12 @@ import kotlinx.coroutines.launch
 
 class BankNotificationListener : NotificationListenerService() {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    /** Sem handler, uma exceção não tratada numa coroutine derruba o processo inteiro — e aqui
+     *  o processo roda em segundo plano, com o app fechado. */
+    private val scope = CoroutineScope(
+        SupervisorJob() + Dispatchers.IO +
+            CoroutineExceptionHandler { _, e -> Log.e(TAG, "falha não tratada no processamento", e) }
+    )
 
     private val container get() = (applicationContext as FinTrackerApp).container
 
@@ -32,11 +38,27 @@ class BankNotificationListener : NotificationListenerService() {
      */
     override fun onListenerDisconnected() {
         Log.w(TAG, "listener desvinculado pelo sistema, solicitando rebind")
-        NotificationAccess.rebind(applicationContext)
+        // requestRebind lança SecurityException se o acesso a notificações não estiver mais
+        // concedido (ex. app hibernado/permissões revogadas por falta de uso) — crash com o app fechado.
+        runCatching { NotificationAccess.rebind(applicationContext) }
+            .onFailure { Log.e(TAG, "falha ao solicitar rebind", it) }
     }
 
+    /**
+     * Recebe notificações de TODOS os apps do aparelho, na main thread do processo. Qualquer
+     * exceção aqui (ex. BadParcelableException ao ler extras com Parcelable de outro app) fecha
+     * o FinTracker mesmo sem ele estar aberto — por isso tudo fica protegido.
+     */
     override fun onNotificationPosted(sbn: StatusBarNotification) {
+        runCatching { handlePosted(sbn) }
+            .onFailure { Log.e(TAG, "falha ao processar notificação de ${sbn.packageName}", it) }
+    }
+
+    private fun handlePosted(sbn: StatusBarNotification) {
         val pkg = sbn.packageName ?: return
+        // As próprias notificações (diagnóstico, limite estourado) repetem o texto do Pix
+        // capturado — sem isso virariam uma transação falsa de "banco FinTracker".
+        if (pkg == packageName) return
         // Calculado cedo: usado tanto pra decidir se processa apps sem cadastro (mais abaixo)
         // quanto pra decidir se dispara notificação de debug em cada ponto de anomalia — bancos
         // já cadastrados deveriam SEMPRE virar transação, então qualquer desvio aqui é bug real.
@@ -88,7 +110,8 @@ class BankNotificationListener : NotificationListenerService() {
                 .onSuccess { outcome ->
                     Log.d(TAG, "$pkg: ${outcome::class.simpleName}")
                     if (hasOverride && outcome is NotificationIngestor.Outcome.Ignored) {
-                        DebugNotifier.ignoredByClassifier(applicationContext, pkg, title, text)
+                        runCatching { DebugNotifier.ignoredByClassifier(applicationContext, pkg, title, text) }
+                            .onFailure { Log.e(TAG, "falha ao notificar diagnóstico", it) }
                     }
                     if (outcome is NotificationIngestor.Outcome.Stored && outcome.type == TransactionType.EXPENSE) {
                         runCatching {
